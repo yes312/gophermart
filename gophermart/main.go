@@ -1,0 +1,56 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"gophermart/internal/app"
+	"gophermart/internal/config"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+var f config.Flags
+
+func init() {
+	// #ВопросМентору: стоит ли строчки ниже спрятать в функцию в пакет config  или в отдельный пакет?
+	flag.StringVar(&f.A, "a", "127.0.0.1:8080", "IP adress")
+	flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
+	flag.StringVar(&f.R, "r", "", "ACCRUAL_SYSTEM_ADDRESS")
+
+}
+
+func main() {
+
+	flag.Parse()
+
+	config, err := config.NewConfig(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// #ВопросМентору: нужно ли graceful shutdown реализовывать как отдельную функцию или метод и нужен ли для этого отдельный пакет?
+	// --------------------
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		<-c
+		cancel()
+
+		fmt.Println("Завершение по сигналу с клавиатуры.")
+		os.Exit(0)
+	}()
+	// -------------------
+
+	s := app.New(config)
+
+	defer s.Close()
+
+	if err := s.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+}
