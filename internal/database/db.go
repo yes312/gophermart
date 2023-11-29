@@ -4,21 +4,28 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"gophermart/internal/services"
 	"gophermart/pkg/logger"
+	"gophermart/utils"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"go.uber.org/zap"
 )
 
-const dbName = "gm"
-
 var _ StoragerDB = &Storage{}
 
 type StoragerDB interface {
 	Close() error
-	GetUser(services.UserAuthInfo)
+	GetUser(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
+	AddUser(context.Context, string, string) func(context.Context, *sql.Tx) (interface{}, error)
+	GetOrder(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
+	AddOrder(context.Context, string, string) func(context.Context, *sql.Tx) (interface{}, error)
+	GetOrders(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
+	GetBalance(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
+	WithdrawBalance(context.Context, string, OrderSum) func(context.Context, *sql.Tx) (interface{}, error)
+	WithRetry(context.Context, func(context.Context, *sql.Tx) (interface{}, error)) (interface{}, error)
+	GetWithdrawals(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
 }
 
 type Storage struct {
@@ -28,19 +35,19 @@ type Storage struct {
 }
 
 // подключение к postgress и migrationsUp
-func New(ctx context.Context, DatabaseURI string) (*Storage, error) {
+func New(ctx context.Context, DatabaseURI string, dbName string) (*Storage, error) {
 	// #ВопросМентору объявить новый логгер или передать его с параметром функции из app.go
 	logger, err := logger.NewLogger("Info")
 	if err != nil {
 		return nil, err
 	}
 	// подключаемся к postgres
-	db, err := sql.Open("pgx", DatabaseURI)
+	conn, err := sql.Open("pgx", DatabaseURI)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	}
 
-	err = migrationsUp(ctx, db, DatabaseURI)
+	db, err := migrationsUp(ctx, conn, DatabaseURI, dbName)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +55,6 @@ func New(ctx context.Context, DatabaseURI string) (*Storage, error) {
 	if err = db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("ошибка открытия базы данных(Ping) %w", err)
 	}
-	defer db.Close()
 
 	return &Storage{
 		DatabaseURI: DatabaseURI,
@@ -57,15 +63,15 @@ func New(ctx context.Context, DatabaseURI string) (*Storage, error) {
 	}, nil
 }
 
-func OpenDBConnection(ctx context.Context, DatabaseURI string) (*sql.DB, error) {
+// func OpenDBConnection(ctx context.Context, DatabaseURI string) (*sql.DB, error) {
 
-	db, err := sql.Open("pgx", DatabaseURI)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
-	}
+// 	db, err := sql.Open("pgx", DatabaseURI)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
+// 	}
 
-	return db, nil
-}
+// 	return db, nil
+// }
 
 func (storage *Storage) Close() error {
 
@@ -74,7 +80,7 @@ func (storage *Storage) Close() error {
 }
 
 // пока миграции создаем тут. думаю, нужно переписать
-func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string) error {
+func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName string) (*sql.DB, error) {
 
 	// проверяем существует ли база
 	var exist string
@@ -85,33 +91,85 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string) error {
 	if exist != dbName {
 		_, err := db.Exec("CREATE DATABASE " + dbName)
 		if err != nil {
-			return fmt.Errorf("ошибка создания БД %w", err)
+			return nil, fmt.Errorf("ошибка создания БД %w", err)
 		}
 	}
 	// подключаемся к базе
 	db, err := sql.Open("pgx", DatabaseURI+dbName)
 	if err != nil {
-		return fmt.Errorf("ошибка открытия базы данных %w", err)
+		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	}
 
-	// нужно для использования типа uuid
-	_, err = db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
-	if err != nil {
-		return fmt.Errorf("ошибка uuid-ossp %w", err)
-	}
-
-	// создание таблицы
+	// создание таблиц
 	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS users (
-		uid uuid DEFAULT uuid_generate_v4 (),
-		name VARCHAR NOT NULL,
+	CREATE TABLE IF NOT EXISTS users (		
+		user_id VARCHAR PRIMARY KEY,
 		hash VARCHAR NOT NULL
-	)
+	);
+	
+	CREATE TABLE IF NOT EXISTS orders (
+		number VARCHAR PRIMARY KEY,
+		user_id VARCHAR NOT NULL,
+		uploaded_at timestamp NOT NULL DEFAULT now(),
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	);
+	
+	CREATE TABLE IF NOT EXISTS billing (
+		order_number VARCHAR NOT NULL,
+		status VARCHAR NOT NULL,
+		accrual int, 
+		uploaded_at time NOT NULL,
+		time timestamp NOT NULL,
+		FOREIGN KEY (order_number) REFERENCES orders(number)
+	);	
+	
 `)
+	// #ВОПРОС МЕНТОРУ. Время генерим в таблице orders или передаем извне?
+
 	if err != nil {
-		return fmt.Errorf("ошибка при создании таблицы users %w", err)
+		return nil, fmt.Errorf("ошибка при создании таблиц  %w", err)
 	}
 
-	return nil
+	return db, nil
+
+}
+
+func (storage *Storage) WithRetry(ctx context.Context, txFunc func(context.Context, *sql.Tx) (interface{}, error)) (interface{}, error) {
+
+	var result interface{}
+	pauseDurations := []int{0, 1, 3, 5}
+
+	for _, pause := range pauseDurations {
+
+		select {
+		case <-ctx.Done():
+			return nil, nil
+		case <-time.After(time.Duration(pause) * time.Second):
+		}
+
+		tx, err := storage.DB.Begin()
+		defer tx.Rollback()
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при создании транзакции %w", err)
+		}
+
+		result, err = txFunc(ctx, tx)
+
+		if err != nil {
+			if !utils.OnDialErr(err) {
+				return nil, fmt.Errorf("НЕвостановимая ошибка %w", err)
+			}
+			storage.logger.Info("восстановимая ошибка %v", err)
+		} else {
+			err = tx.Commit()
+			if err == nil {
+				return nil, fmt.Errorf("ошибка при выполнении commit %w", err)
+			}
+			break
+		}
+
+	}
+
+	return result, nil
 
 }

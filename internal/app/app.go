@@ -8,14 +8,18 @@ import (
 	"log"
 	"net/http"
 
+	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/pkg/logger"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
+const dbName = "gm"
+
 // #ВопросМентору описание структуры сервера лучше тут или в пакете config?
 type Server struct {
+	ctx     context.Context
 	server  *http.Server
 	config  *config.Config
 	mux     *chi.Mux
@@ -29,9 +33,10 @@ type Storager interface {
 	db.StoragerDB
 }
 
-func New(config *config.Config) *Server {
+func New(ctx context.Context, config *config.Config) *Server {
 
 	return &Server{
+		ctx:    ctx,
 		config: config,
 		// mux:    chi.NewRouter(),
 	}
@@ -47,7 +52,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	s.logger = logger
 
-	storage, err := db.New(ctx, s.config.DatabaseURI)
+	storage, err := db.New(ctx, s.config.DatabaseURI, dbName)
 	if err != nil {
 		return err
 	}
@@ -62,18 +67,39 @@ func (s *Server) Start(ctx context.Context) error {
 	return s.server.ListenAndServe()
 }
 
-func (s *Server) Close() {
-
+func (s *Server) Close() error {
+	s.logger.Info("===Завершение работы сервера===")
+	err := s.server.Shutdown(s.ctx)
+	if err != nil {
+		return err
+	}
+	err = s.storage.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) ConfigureMux() *chi.Mux {
-	r := chi.NewRouter()
-	h := transport.New(s.storage)
 
-	r.Route("/", func(r chi.Router) {
+	router := chi.NewRouter()
+	handler := transport.New(s.ctx, s.storage, s.logger)
+	handler.AuthToken = *jwtpackage.NewToken(s.config.TokenExp, s.config.Key)
 
-		r.Post("/api/user/register", http.HandlerFunc(h.Registration))
+	router.Route("/", func(r chi.Router) {
+
+		r.Post("/api/user/register", handler.Registration)
+		r.Post("/api/user/login", handler.Login)
+
+		r.Post("/api/user/orders/{ordersNumber}", handler.AuthMiddleware(handler.UploadOrders))
+		r.Get("/api/user/orders", handler.AuthMiddleware(handler.GetUploadedOrders))
+
+		r.Get("/api/user/balance", handler.AuthMiddleware(handler.GetBalance))
+		r.Post("/api/user/balance/withdraw", handler.AuthMiddleware(handler.WithdrawBalance))
+
+		r.Get("/api/user/withdrawals", handler.GetWithdrawals)
 
 	})
-	return r
+
+	return router
 }

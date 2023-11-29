@@ -4,6 +4,7 @@ import (
 	"gophermart/utils"
 	"log"
 	"os"
+	"time"
 )
 
 // Сервис должен поддерживать конфигурирование следующими методами:
@@ -22,6 +23,8 @@ type Config struct {
 	AccrualSysremAdress string
 	DatabaseURI         string
 	LoggerLevel         string
+	Key                 string
+	TokenExp            time.Duration
 }
 
 func NewConfig(flag Flags) (*Config, error) {
@@ -50,6 +53,10 @@ func NewConfig(flag Flags) (*Config, error) {
 	}
 
 	c.LoggerLevel = "Info"
+
+	// TODO  ключ будем хранить в ямл файле. доделать
+	c.Key = "key"
+	c.TokenExp = time.Hour * 999
 
 	return &c, nil
 

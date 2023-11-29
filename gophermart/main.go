@@ -46,9 +46,16 @@ func main() {
 	}()
 	// -------------------
 
-	s := app.New(config)
+	s := app.New(ctx, config)
 
-	defer s.Close()
+	defer func() {
+		if err := s.Close(); err != nil {
+			log.Println("ошибка при закрытии сервера:", err)
+		} else {
+			log.Println("работа сервера успешно завершена")
+		}
+
+	}()
 
 	if err := s.Start(ctx); err != nil {
 		log.Fatal(err)
