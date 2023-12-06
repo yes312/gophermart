@@ -147,7 +147,6 @@ func (s *Storage) GetBalance(ctx context.Context, userID string) dbOperation {
 	}
 }
 
-// TODO retry сделать сделать через middleware!!
 func (s *Storage) WithdrawBalance(ctx context.Context, userID string, orderSum OrderSum) dbOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
@@ -277,7 +276,7 @@ func (s *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatus) d
 		_, err := tx.ExecContext(ctx, query, t)
 
 		// В целях отладки
-		fmt.Println(query)
+		// fmt.Println(query)
 
 		return OrderUserID{}, err
 	}
