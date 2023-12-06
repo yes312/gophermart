@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (st *Storage) GetUser(ctx context.Context, login string) dbOperation {
+func (storage *Storage) GetUser(ctx context.Context, login string) dbOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -21,7 +21,7 @@ func (st *Storage) GetUser(ctx context.Context, login string) dbOperation {
 
 }
 
-func (st *Storage) AddUser(ctx context.Context, UserID, hash string) dbOperation {
+func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		addUserQuery := `INSERT INTO users(user_id, hash) VALUES ($1, $2)`
@@ -31,7 +31,7 @@ func (st *Storage) AddUser(ctx context.Context, UserID, hash string) dbOperation
 	}
 }
 
-func (st *Storage) GetOrder(ctx context.Context, order string) dbOperation {
+func (storage *Storage) GetOrder(ctx context.Context, order string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 		getOrderQuery := `
 		SELECT orders.number, users.user_id
@@ -49,7 +49,7 @@ func (st *Storage) GetOrder(ctx context.Context, order string) dbOperation {
 	}
 }
 
-func (st *Storage) AddOrder(ctx context.Context, orderNumber string, userID string) dbOperation {
+func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID string) dbOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -86,7 +86,7 @@ func (st *Storage) AddOrder(ctx context.Context, orderNumber string, userID stri
 	}
 }
 
-func (st *Storage) GetOrders(ctx context.Context, userID string) dbOperation {
+func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -124,7 +124,7 @@ func (st *Storage) GetOrders(ctx context.Context, userID string) dbOperation {
 	}
 }
 
-func (st *Storage) GetBalance(ctx context.Context, userID string) dbOperation {
+func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		getBalanceQuery := `	
@@ -147,7 +147,7 @@ func (st *Storage) GetBalance(ctx context.Context, userID string) dbOperation {
 	}
 }
 
-func (st *Storage) WithdrawBalance(ctx context.Context, userID string, orderSum OrderSum) dbOperation {
+func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orderSum OrderSum) dbOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -179,7 +179,7 @@ func (st *Storage) WithdrawBalance(ctx context.Context, userID string, orderSum 
 	}
 }
 
-func (st *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperation {
+func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		queryWithdrawals := `SELECT orders.number, billing.accrual AS sum, billing.uploaded_at AS processed_at
@@ -211,7 +211,7 @@ func (st *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperatio
 	}
 }
 
-func (st *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
+func (storage *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 		query := `
 		SELECT b.order_number
@@ -251,7 +251,7 @@ func (st *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
 	}
 }
 
-func (st *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatus) dbOperation {
+func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatus) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		t := time.Now()
