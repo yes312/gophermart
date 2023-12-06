@@ -17,23 +17,23 @@ var f config.Flags
 
 func init() {
 	// #ВопросМентору: стоит ли строчки ниже спрятать в функцию в пакет config  или в отдельный пакет?
-	// flag.StringVar(&f.A, "a", "http://127.0.0.1:8081", "IP adress")
-	// flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
-	// flag.StringVar(&f.R, "r", "http://127.0.0.1:8080", "ACCRUAL_SYSTEM_ADDRESS")
-	flag.StringVar(&f.A, "a", "http://127.0.0.1:8080", "IP adress")
+	flag.StringVar(&f.A, "a", "http://127.0.0.1:8081", "IP adress")
 	flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
-	flag.StringVar(&f.R, "r", "http://127.0.0.1:8081", "ACCRUAL_SYSTEM_ADDRESS")
+	flag.StringVar(&f.R, "r", "http://127.0.0.1:8080", "ACCRUAL_SYSTEM_ADDRESS")
+	// flag.StringVar(&f.A, "a", "http://127.0.0.1:8080", "IP adress")
+	// flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
+	// flag.StringVar(&f.R, "r", "http://127.0.0.1:8081", "ACCRUAL_SYSTEM_ADDRESS")
 }
 
 func main() {
-
+	log.Println("====Запуск MAIN====")
 	flag.Parse()
 
 	config, err := config.NewConfig(f)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	log.Println("====Запуск после конфига====")
 	// #ВопросМентору: нужно ли graceful shutdown реализовывать как отдельную функцию или метод и нужен ли для этого отдельный пакет?
 	// --------------------
 	c := make(chan os.Signal, 1)

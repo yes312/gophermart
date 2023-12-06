@@ -64,7 +64,7 @@ func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup) error {
 		Addr:    s.config.RunAdress,
 		Handler: s.mux,
 	}
-	s.logger.Info("адрес сервера: " + "s.config.RunAdress")
+	s.logger.Info("адрес сервера: " + s.config.RunAdress)
 	a := services.NewAccrual(s.config.AccrualSysremAdress, s.config.AccrualRequestInterval, s.config.AccuralPuttingDBInterval, s.storage, s.logger)
 	go a.RunAccrualRequester(ctx, wg)
 
