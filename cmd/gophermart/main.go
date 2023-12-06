@@ -23,9 +23,19 @@ func init() {
 	// flag.StringVar(&f.A, "a", "http://127.0.0.1:8080", "IP adress")
 	// flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
 	// flag.StringVar(&f.R, "r", "http://127.0.0.1:8081", "ACCRUAL_SYSTEM_ADDRESS")
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Восстановлено от паники:", r)
+		}
+	}()
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Восстановлено от паники MAIN:", r)
+		}
+	}()
 	log.Println("====Запуск MAIN====")
 	flag.Parse()
 
