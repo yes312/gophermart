@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (storage *Storage) GetUser(ctx context.Context, login string) dbOperation {
+func (s *Storage) GetUser(ctx context.Context, login string) dbOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -21,7 +21,7 @@ func (storage *Storage) GetUser(ctx context.Context, login string) dbOperation {
 
 }
 
-func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) dbOperation {
+func (s *Storage) AddUser(ctx context.Context, UserID, hash string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		addUserQuery := `INSERT INTO users(user_id, hash) VALUES ($1, $2)`
@@ -116,11 +116,15 @@ func (s *Storage) GetOrders(ctx context.Context, userID string) dbOperation {
 			orderStatusList = append(orderStatusList, ordS)
 		}
 
+		if err := rows.Err(); err != nil {
+			return orderStatusList, err
+		}
+
 		return orderStatusList, nil
 	}
 }
 
-func (s *Storage) GetBalance(ctx context.Context, user_id string) dbOperation {
+func (s *Storage) GetBalance(ctx context.Context, userID string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		getBalanceQuery := `	
@@ -133,7 +137,7 @@ func (s *Storage) GetBalance(ctx context.Context, user_id string) dbOperation {
 
 		var balance Balance
 
-		err := s.DB.QueryRowContext(ctx, getBalanceQuery, user_id).Scan(&balance.Current, &balance.Withdraw)
+		err := s.DB.QueryRowContext(ctx, getBalanceQuery, userID).Scan(&balance.Current, &balance.Withdraw)
 
 		if err != nil {
 			return Balance{}, err
@@ -201,7 +205,9 @@ func (s *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperation
 			}
 			withdrawalsList = append(withdrawalsList, w)
 		}
-
+		if err := rows.Err(); err != nil {
+			return withdrawalsList, err
+		}
 		return withdrawalsList, nil
 	}
 }
@@ -223,27 +229,30 @@ func (s *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
 		) AND b.status IN ('PROCESSING', 'NEW') ;
 		`
 		var ordersList []string
-		row, err := tx.QueryContext(ctx, query)
+		rows, err := tx.QueryContext(ctx, query)
 		if err != nil {
 			return ordersList, err
 		}
-		defer row.Close()
+		defer rows.Close()
 
 		var orderNumber string
 
-		for row.Next() {
+		for rows.Next() {
 
-			err := row.Scan(&orderNumber)
+			err := rows.Scan(&orderNumber)
 			if err != nil {
 				return nil, err
 			}
 			ordersList = append(ordersList, orderNumber)
 		}
+		if err := rows.Err(); err != nil {
+			return ordersList, err
+		}
 		return ordersList, nil
 	}
 }
 
-func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatus) dbOperation {
+func (s *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatus) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		t := time.Now()

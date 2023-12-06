@@ -16,7 +16,7 @@ func (h *handlersData) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "остутствует токен авторизации", http.StatusUnauthorized)
 			return
 		}
-		user, err := h.AuthToken.GetUserId(authHeader)
+		user, err := h.AuthToken.GetUserID(authHeader)
 		if err != nil {
 			h.logger.Errorf("ошибка проверки токена: %w", err)
 			http.Error(w, err.Error(), http.StatusUnauthorized)

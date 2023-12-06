@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	db "gophermart/internal/database"
 	"gophermart/internal/services"
 	"net/http"
@@ -109,7 +110,7 @@ func (h *handlersData) Login(w http.ResponseWriter, r *http.Request) {
 
 		} else {
 			h.logger.Infof("неверный пароль для пользователя %s", data.Login)
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			http.Error(w, fmt.Sprint(data.Login, "-неверный пароль"), http.StatusUnauthorized)
 		}
 
 	}
