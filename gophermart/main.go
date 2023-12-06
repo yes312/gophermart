@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -16,10 +17,9 @@ var f config.Flags
 
 func init() {
 	// #ВопросМентору: стоит ли строчки ниже спрятать в функцию в пакет config  или в отдельный пакет?
-	flag.StringVar(&f.A, "a", "127.0.0.1:8080", "IP adress")
+	flag.StringVar(&f.A, "a", "localhost:8081", "IP adress")
 	flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
-	flag.StringVar(&f.R, "r", "", "ACCRUAL_SYSTEM_ADDRESS")
-
+	flag.StringVar(&f.R, "r", "http://127.0.0.1:8080", "ACCRUAL_SYSTEM_ADDRESS")
 }
 
 func main() {
@@ -47,8 +47,9 @@ func main() {
 	// -------------------
 
 	s := app.New(ctx, config)
-
+	wg := &sync.WaitGroup{}
 	defer func() {
+		wg.Wait()
 		if err := s.Close(); err != nil {
 			log.Println("ошибка при закрытии сервера:", err)
 		} else {
@@ -57,7 +58,8 @@ func main() {
 
 	}()
 
-	if err := s.Start(ctx); err != nil {
+	if err := s.Start(ctx, wg); err != nil {
 		log.Fatal(err)
 	}
+
 }

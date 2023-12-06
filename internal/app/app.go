@@ -4,9 +4,11 @@ import (
 	"context"
 	"gophermart/internal/config"
 	db "gophermart/internal/database"
-	transport "gophermart/internal/transport"
+	"gophermart/internal/services"
+	transport "gophermart/internal/transport/handlers"
 	"log"
 	"net/http"
+	"sync"
 
 	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/pkg/logger"
@@ -38,11 +40,10 @@ func New(ctx context.Context, config *config.Config) *Server {
 	return &Server{
 		ctx:    ctx,
 		config: config,
-		// mux:    chi.NewRouter(),
 	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup) error {
 
 	log.Println("===Запуск сервера===")
 	logger, err := logger.NewLogger(s.config.LoggerLevel)
@@ -58,12 +59,16 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	s.storage = storage
 
-	s.ConfigureMux()
+	s.mux = s.ConfigureMux()
 
 	s.server = &http.Server{
 		Addr:    s.config.RunAdress,
 		Handler: s.mux,
 	}
+
+	a := services.NewAccrual(s.config.AccrualSysremAdress, s.config.AccrualRequestInterval, s.config.AccuralPuttingDBInterval, s.storage, s.logger)
+	go a.RunAccrualRequester(ctx, wg)
+
 	return s.server.ListenAndServe()
 }
 

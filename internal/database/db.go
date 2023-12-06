@@ -15,17 +15,21 @@ import (
 
 var _ StoragerDB = &Storage{}
 
+type dbOperation func(context.Context, *sql.Tx) (interface{}, error)
+
 type StoragerDB interface {
 	Close() error
-	GetUser(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
-	AddUser(context.Context, string, string) func(context.Context, *sql.Tx) (interface{}, error)
-	GetOrder(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
-	AddOrder(context.Context, string, string) func(context.Context, *sql.Tx) (interface{}, error)
-	GetOrders(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
-	GetBalance(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
-	WithdrawBalance(context.Context, string, OrderSum) func(context.Context, *sql.Tx) (interface{}, error)
-	WithRetry(context.Context, func(context.Context, *sql.Tx) (interface{}, error)) (interface{}, error)
-	GetWithdrawals(context.Context, string) func(context.Context, *sql.Tx) (interface{}, error)
+	GetUser(context.Context, string) dbOperation
+	AddUser(context.Context, string, string) dbOperation
+	GetOrder(context.Context, string) dbOperation
+	AddOrder(context.Context, string, string) dbOperation
+	GetOrders(context.Context, string) dbOperation
+	GetBalance(context.Context, string) dbOperation
+	WithdrawBalance(context.Context, string, OrderSum) dbOperation
+	WithRetry(context.Context, dbOperation) (interface{}, error)
+	GetWithdrawals(context.Context, string) dbOperation
+	GetNewProcessedOrders(context.Context) dbOperation
+	PutStatuses(context.Context, *[]OrderStatus) dbOperation
 }
 
 type Storage struct {
@@ -62,16 +66,6 @@ func New(ctx context.Context, DatabaseURI string, dbName string) (*Storage, erro
 		logger:      logger,
 	}, nil
 }
-
-// func OpenDBConnection(ctx context.Context, DatabaseURI string) (*sql.DB, error) {
-
-// 	db, err := sql.Open("pgx", DatabaseURI)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
-// 	}
-
-// 	return db, nil
-// }
 
 func (storage *Storage) Close() error {
 
@@ -110,7 +104,7 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName st
 	CREATE TABLE IF NOT EXISTS orders (
 		number VARCHAR PRIMARY KEY,
 		user_id VARCHAR NOT NULL,
-		uploaded_at timestamp NOT NULL DEFAULT now(),
+		uploaded_at timestamp NOT NULL,
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
 	
@@ -118,13 +112,14 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName st
 		order_number VARCHAR NOT NULL,
 		status VARCHAR NOT NULL,
 		accrual int, 
-		uploaded_at time NOT NULL,
+		uploaded_at timestamp NOT NULL,
 		time timestamp NOT NULL,
-		FOREIGN KEY (order_number) REFERENCES orders(number)
+		FOREIGN KEY (order_number) REFERENCES orders(number),
+		CONSTRAINT unique_order_number_status UNIQUE (order_number, status)
 	);	
 	
 `)
-	// #ВОПРОС МЕНТОРУ. Время генерим в таблице orders или передаем извне?
+	// timestamp NOT NULL DEFAULT now()
 
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании таблиц  %w", err)
@@ -134,7 +129,7 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName st
 
 }
 
-func (storage *Storage) WithRetry(ctx context.Context, txFunc func(context.Context, *sql.Tx) (interface{}, error)) (interface{}, error) {
+func (storage *Storage) WithRetry(ctx context.Context, txFunc dbOperation) (interface{}, error) {
 
 	var result interface{}
 	pauseDurations := []int{0, 1, 3, 5}
@@ -162,7 +157,7 @@ func (storage *Storage) WithRetry(ctx context.Context, txFunc func(context.Conte
 			storage.logger.Info("восстановимая ошибка %v", err)
 		} else {
 			err = tx.Commit()
-			if err == nil {
+			if err != nil {
 				return nil, fmt.Errorf("ошибка при выполнении commit %w", err)
 			}
 			break

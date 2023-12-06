@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 // Сервис должен поддерживать конфигурирование следующими методами:
@@ -19,12 +21,14 @@ type Flags struct {
 }
 
 type Config struct {
-	RunAdress           string
-	AccrualSysremAdress string
-	DatabaseURI         string
-	LoggerLevel         string
-	Key                 string
-	TokenExp            time.Duration
+	RunAdress                string
+	AccrualSysremAdress      string
+	AccrualRequestInterval   int
+	AccuralPuttingDBInterval int
+	DatabaseURI              string
+	LoggerLevel              string
+	Key                      string
+	TokenExp                 time.Duration
 }
 
 func NewConfig(flag Flags) (*Config, error) {
@@ -54,9 +58,15 @@ func NewConfig(flag Flags) (*Config, error) {
 
 	c.LoggerLevel = "Info"
 
-	// TODO  ключ будем хранить в ямл файле. доделать
-	c.Key = "key"
+	secretKeyPass := "configs/key.toml"
+	_, err := toml.DecodeFile(secretKeyPass, &c)
+	if err != nil {
+		return &Config{}, err
+	}
+
 	c.TokenExp = time.Hour * 999
+	c.AccrualRequestInterval = 10
+	c.AccuralPuttingDBInterval = 5
 
 	return &c, nil
 
