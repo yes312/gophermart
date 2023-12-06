@@ -19,7 +19,6 @@ import (
 
 const dbName = "gm"
 
-// #ВопросМентору описание структуры сервера лучше тут или в пакете config?
 type Server struct {
 	ctx     context.Context
 	server  *http.Server
