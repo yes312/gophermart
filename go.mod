@@ -3,7 +3,6 @@ module gophermart
 go 1.20
 
 require (
-	github.com/BurntSushi/toml v1.3.2
 	github.com/go-chi/chi v1.5.5
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang-jwt/jwt/v5 v5.1.0
