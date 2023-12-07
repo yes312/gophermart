@@ -24,6 +24,7 @@ func init() {
 	// flag.StringVar(&f.A, "a", "", "IP adress")
 	// flag.StringVar(&f.D, "d", "", "database uri")
 	// flag.StringVar(&f.R, "r", "", "ACCRUAL_SYSTEM_ADDRESS")
+
 	defer func() {
 
 		if r := recover(); r != nil {
