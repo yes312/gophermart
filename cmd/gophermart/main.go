@@ -28,6 +28,7 @@ func init() {
 			fmt.Println("Восстановлено от паники:", r)
 		}
 	}()
+
 }
 
 func main() {
