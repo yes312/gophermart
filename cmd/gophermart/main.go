@@ -15,27 +15,23 @@ import (
 
 var f config.Flags
 
-func init() {
+// func init() {
 
-	// #ВопросМентору: стоит ли строчки ниже спрятать в функцию в пакет config  или в отдельный пакет?
+// #ВопросМентору: стоит ли строчки ниже спрятать в функцию в пакет config  или в отдельный пакет?
+// flag.StringVar(&f.A, "a", "localhost:8080", "IP adress")
+// flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
+// flag.StringVar(&f.R, "r", "http://127.0.0.1:8081", "ACCRUAL_SYSTEM_ADDRESS")
+// flag.StringVar(&f.A, "a", "", "IP adress")
+// flag.StringVar(&f.D, "d", "", "database uri")
+// flag.StringVar(&f.R, "r", "", "ACCRUAL_SYSTEM_ADDRESS")
+
+// }
+
+func main() {
+
 	flag.StringVar(&f.A, "a", "localhost:8080", "IP adress")
 	flag.StringVar(&f.D, "d", "postgres://postgres:12345@localhost:5432/", "database uri")
 	flag.StringVar(&f.R, "r", "http://127.0.0.1:8081", "ACCRUAL_SYSTEM_ADDRESS")
-	// flag.StringVar(&f.A, "a", "", "IP adress")
-	// flag.StringVar(&f.D, "d", "", "database uri")
-	// flag.StringVar(&f.R, "r", "", "ACCRUAL_SYSTEM_ADDRESS")
-
-	defer func() {
-
-		if r := recover(); r != nil {
-			fmt.Println("Восстановлено от паники :", r)
-		}
-
-	}()
-	fmt.Println("====Запуск INIT====")
-}
-
-func main() {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Восстановлено от паники MAIN:", r)
