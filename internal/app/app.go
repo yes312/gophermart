@@ -44,7 +44,7 @@ func New(ctx context.Context, config *config.Config) *Server {
 
 func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup) error {
 
-	log.Println("===Запуск сервера===")
+	log.Println("===Запуск сервера==")
 	logger, err := logger.NewLogger(s.config.LoggerLevel)
 
 	if err != nil {
