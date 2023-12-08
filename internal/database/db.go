@@ -64,15 +64,13 @@ func New(ctx context.Context, DatabaseURI string, MigrationsPath string) (*Stora
 
 	fmt.Println("Project root: ", getProjectRoot())
 
-	// filename := "gophermart/cmd/gophermart/main.go"
-	// dir := filepath.Dir(filename)
-	// fmt.Println(dir)
-	// absoluteFilePath, err := filepath.Abs("")
+	// exePath, err := filepath.Abs(filepath.Dir(""))
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	// absoluteFilePath := fmt.Sprint(getProjectRoot(), "\\", MigrationsPath)
+	// Формируем путь к файлу key.txt
+	// MigrationsPath = filepath.Join(exePath, "../../migrations")
 
 	db, err := migrationsUp(ctx, conn, DatabaseURI, MigrationsPath)
 	if err != nil {
@@ -98,7 +96,7 @@ func (storage *Storage) Close() error {
 
 // пока миграции создаем тут. думаю, нужно переписать
 func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migrations string) (*sql.DB, error) {
-
+	// migrations = "c:/Users/Andrey/go/src/github.com/yes312/gophermart/migrations"
 	path := fmt.Sprintf("file://%s", migrations)
 	m, err := migrate.New(path, DatabaseURI)
 	if err != nil {

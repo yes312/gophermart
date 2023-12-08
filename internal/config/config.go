@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 	"time"
-
-	"github.com/BurntSushi/toml"
 )
 
 // Сервис должен поддерживать конфигурирование следующими методами:
@@ -59,12 +57,13 @@ func NewConfig(flag Flags) (*Config, error) {
 
 	c.LoggerLevel = "Info"
 
-	filePath := "configs/key.toml"
+	// filePath := "configs/key.toml"
 
-	_, err := toml.DecodeFile(filePath, &c)
-	if err != nil {
-		return &Config{}, err
-	}
+	// _, err := toml.DecodeFile(filePath, &c)
+	// if err != nil {
+	// 	return &Config{}, err
+	// }
+	c.Key = "secret"
 	c.MigrationsPath = "migrations"
 	c.TokenExp = time.Hour * 999
 	c.AccrualRequestInterval = 10
