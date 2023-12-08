@@ -58,8 +58,9 @@ func NewConfig(flag Flags) (*Config, error) {
 
 	c.LoggerLevel = "Info"
 
-	secretKeyPass := "configs/key.toml"
-	_, err := toml.DecodeFile(secretKeyPass, &c)
+	filePath := "configs/key.toml"
+
+	_, err := toml.DecodeFile(filePath, &c)
 	if err != nil {
 		return &Config{}, err
 	}

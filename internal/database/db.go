@@ -77,25 +77,25 @@ func (storage *Storage) Close() error {
 func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName string) (*sql.DB, error) {
 
 	// проверяем существует ли база
-	var exist string
-	row := db.QueryRowContext(ctx, "SELECT datname FROM pg_database where datname=$1;", dbName)
-	row.Scan(&exist)
+	// var exist string
+	// row := db.QueryRowContext(ctx, "SELECT datname FROM pg_database where datname=$1;", dbName)
+	// row.Scan(&exist)
 
-	// создаем если не существует
-	if exist != dbName {
-		_, err := db.Exec("CREATE DATABASE " + dbName)
-		if err != nil {
-			return nil, fmt.Errorf("ошибка создания БД %w", err)
-		}
-	}
-	// подключаемся к базе
-	db, err := sql.Open("pgx", DatabaseURI+dbName)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
-	}
+	// // создаем если не существует
+	// if exist != dbName {
+	// 	_, err := db.Exec("CREATE DATABASE " + dbName)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("ошибка создания БД %w", err)
+	// 	}
+	// }
+	// // подключаемся к базе
+	// db, err := sql.Open("pgx", DatabaseURI+dbName)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
+	// }
 
 	// создание таблиц
-	_, err = db.Exec(`
+	_, err := db.Exec(`
 	CREATE TABLE IF NOT EXISTS users (		
 		user_id VARCHAR PRIMARY KEY,
 		hash VARCHAR NOT NULL
