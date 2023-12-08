@@ -53,7 +53,7 @@ func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup) error {
 	}
 	s.logger = logger
 
-	storage, err := db.New(ctx, s.config.DatabaseURI, dbName)
+	storage, err := db.New(ctx, s.config.DatabaseURI, s.config.MigrationsPath)
 	if err != nil {
 		return err
 	}

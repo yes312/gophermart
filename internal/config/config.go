@@ -29,6 +29,7 @@ type Config struct {
 	LoggerLevel              string
 	Key                      string
 	TokenExp                 time.Duration
+	MigrationsPath           string
 }
 
 func NewConfig(flag Flags) (*Config, error) {
@@ -64,7 +65,7 @@ func NewConfig(flag Flags) (*Config, error) {
 	if err != nil {
 		return &Config{}, err
 	}
-
+	c.MigrationsPath = "migrations"
 	c.TokenExp = time.Hour * 999
 	c.AccrualRequestInterval = 10
 	c.AccuralPuttingDBInterval = 5

@@ -3,13 +3,19 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"gophermart/pkg/logger"
 	"gophermart/utils"
+	"path/filepath"
+	"runtime"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
-
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -38,8 +44,13 @@ type Storage struct {
 	logger      *zap.SugaredLogger
 }
 
+func getProjectRoot() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Dir(filename)
+}
+
 // подключение к postgress и migrationsUp
-func New(ctx context.Context, DatabaseURI string, dbName string) (*Storage, error) {
+func New(ctx context.Context, DatabaseURI string, MigrationsPath string) (*Storage, error) {
 	// #ВопросМентору объявить новый логгер или передать его с параметром функции из app.go
 	logger, err := logger.NewLogger("Info")
 	if err != nil {
@@ -51,7 +62,19 @@ func New(ctx context.Context, DatabaseURI string, dbName string) (*Storage, erro
 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	}
 
-	db, err := migrationsUp(ctx, conn, DatabaseURI, dbName)
+	fmt.Println("Project root: ", getProjectRoot())
+
+	// filename := "gophermart/cmd/gophermart/main.go"
+	// dir := filepath.Dir(filename)
+	// fmt.Println(dir)
+	// absoluteFilePath, err := filepath.Abs("")
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// absoluteFilePath := fmt.Sprint(getProjectRoot(), "\\", MigrationsPath)
+
+	db, err := migrationsUp(ctx, conn, DatabaseURI, MigrationsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +97,17 @@ func (storage *Storage) Close() error {
 }
 
 // пока миграции создаем тут. думаю, нужно переписать
-func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName string) (*sql.DB, error) {
+func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migrations string) (*sql.DB, error) {
+
+	path := fmt.Sprintf("file://%s", migrations)
+	m, err := migrate.New(path, DatabaseURI)
+	if err != nil {
+		return nil, err
+	}
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return nil, err
+	}
+	return db, nil
 
 	// проверяем существует ли база
 	// var exist string
@@ -95,37 +128,36 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, dbName st
 	// }
 
 	// создание таблиц
-	_, err := db.Exec(`
-	CREATE TABLE IF NOT EXISTS users (		
-		user_id VARCHAR PRIMARY KEY,
-		hash VARCHAR NOT NULL
-	);
-	
-	CREATE TABLE IF NOT EXISTS orders (
-		number VARCHAR PRIMARY KEY,
-		user_id VARCHAR NOT NULL,
-		uploaded_at timestamp NOT NULL,
-		FOREIGN KEY (user_id) REFERENCES users(user_id)
-	);
-	
-	CREATE TABLE IF NOT EXISTS billing (
-		order_number VARCHAR NOT NULL,
-		status VARCHAR NOT NULL,
-		accrual int, 
-		uploaded_at timestamp NOT NULL,
-		time timestamp NOT NULL,
-		FOREIGN KEY (order_number) REFERENCES orders(number),
-		CONSTRAINT unique_order_number_status UNIQUE (order_number, status)
-	);	
-	
-`)
-	// timestamp NOT NULL DEFAULT now()
+	// _, err := db.Exec(`
+	// 	CREATE TABLE IF NOT EXISTS users (
+	// 		user_id VARCHAR PRIMARY KEY,
+	// 		hash VARCHAR NOT NULL
+	// 	);
 
-	if err != nil {
-		return nil, fmt.Errorf("ошибка при создании таблиц  %w", err)
-	}
+	// 	CREATE TABLE IF NOT EXISTS orders (
+	// 		number VARCHAR PRIMARY KEY,
+	// 		user_id VARCHAR NOT NULL,
+	// 		uploaded_at timestamp NOT NULL,
+	// 		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	// 	);
 
-	return db, nil
+	// 	CREATE TABLE IF NOT EXISTS billing (
+	// 		order_number VARCHAR NOT NULL,
+	// 		status VARCHAR NOT NULL,
+	// 		accrual int,
+	// 		uploaded_at timestamp NOT NULL,
+	// 		time timestamp NOT NULL,
+	// 		FOREIGN KEY (order_number) REFERENCES orders(number),
+	// 		CONSTRAINT unique_order_number_status UNIQUE (order_number, status)
+	// 	);
+
+	// `)
+
+	// if err != nil {
+	// 	return nil, fmt.Errorf("ошибка при создании таблиц  %w", err)
+	// }
+
+	// return db, nil
 
 }
 
