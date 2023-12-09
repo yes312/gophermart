@@ -98,7 +98,12 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	// 500 — внутренняя ошибка сервера.
 
 	key := UserID("user")
-	userID := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(key).(string)
+	if !ok {
+		h.logger.Errorf("путой юзер детектед")
+		http.Error(w, "wrong user id", http.StatusUnauthorized)
+		return
+	}
 
 	withdrawalsInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetWithdrawals(h.ctx, userID))
 	withdrawals, ok := withdrawalsInterface.([]db.Withdrawal)
