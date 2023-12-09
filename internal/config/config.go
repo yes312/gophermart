@@ -60,7 +60,7 @@ func NewConfig(flag Flags) (*Config, error) {
 
 	c.LoggerLevel = "Info"
 
-	filePath := filepath.Join("configs,", "key.toml")
+	filePath := filepath.Join("configs", "key.toml")
 
 	_, err := toml.DecodeFile(filePath, &c)
 	if err != nil {
