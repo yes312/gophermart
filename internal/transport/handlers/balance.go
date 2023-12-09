@@ -11,8 +11,12 @@ import (
 
 func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 
-	key := UserID("user")
-	userID := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		h.logger.Errorf("путой юзер детектед")
+		http.Error(w, "wrong user id", http.StatusUnauthorized)
+		return
+	}
 
 	balanceInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetBalance(h.ctx, userID))
 
@@ -44,8 +48,7 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 	// 422 — неверный номер заказа;
 	// 500 — внутренняя ошибка сервера.
 
-	key := UserID("user")
-	userID, ok := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
 		h.logger.Errorf("путой юзер детектед")
 		http.Error(w, "wrong user id", http.StatusUnauthorized)
@@ -97,8 +100,7 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	// 401 — пользователь не авторизован.
 	// 500 — внутренняя ошибка сервера.
 
-	key := UserID("user")
-	userID, ok := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
 		h.logger.Errorf("путой юзер детектед")
 		http.Error(w, "wrong user id", http.StatusUnauthorized)

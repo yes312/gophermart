@@ -5,7 +5,9 @@ import (
 	"net/http"
 )
 
-type UserID string
+type key string
+
+const userIDKey key = "userID"
 
 func (h *handlersData) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +26,7 @@ func (h *handlersData) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// #ВОПРОСМЕНТОРУ  получаем юзера, и передаем его дальше через контекст. Не знаю хороший ли способ. Возможно есть более предпочтительный?
-		ctx := context.WithValue(r.Context(), UserID("user"), user)
+		ctx := context.WithValue(r.Context(), userIDKey, user)
 		w.Header().Set("Content-Type", ApplicationJSON)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

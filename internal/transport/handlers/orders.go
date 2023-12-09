@@ -63,10 +63,14 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := UserID("user")
-	UserID := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		h.logger.Errorf("путой юзер детектед")
+		http.Error(w, "wrong user id", http.StatusUnauthorized)
+		return
+	}
 
-	orderUserIDInterface, err := h.storage.WithRetry(h.ctx, h.storage.AddOrder(h.ctx, ordersNumber, UserID))
+	orderUserIDInterface, err := h.storage.WithRetry(h.ctx, h.storage.AddOrder(h.ctx, ordersNumber, userID))
 	orderUserID, _ := orderUserIDInterface.(db.OrderUserID)
 
 	if err != nil {
@@ -78,29 +82,33 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if orderUserID.OrderNumber == ordersNumber {
-		if orderUserID.UserID == UserID {
+		if orderUserID.UserID == userID {
 
-			h.logger.Infof("заказ %s уже был загружен этим пользователем %s", ordersNumber, UserID)
+			h.logger.Infof("заказ %s уже был загружен этим пользователем %s", ordersNumber, userID)
 			setResponseHeaders(w, ApplicationJSON, http.StatusOK)
 			return
 
 		} else {
 
-			h.logger.Infof("заказ %s уже был загружен другим пользователем %s", ordersNumber, UserID)
+			h.logger.Infof("заказ %s уже был загружен другим пользователем %s", ordersNumber, userID)
 			setResponseHeaders(w, ApplicationJSON, http.StatusConflict)
 			return
 		}
 	}
 
-	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, UserID)
+	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, userID)
 	setResponseHeaders(w, ApplicationJSON, http.StatusAccepted)
 
 }
 
 func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request) {
 
-	key := UserID("user")
-	userID := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		h.logger.Errorf("путой юзер детектед")
+		http.Error(w, "wrong user id", http.StatusUnauthorized)
+		return
+	}
 
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
