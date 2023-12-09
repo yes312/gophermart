@@ -145,7 +145,7 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 
 				var mutex sync.Mutex
 				mutex.Lock()
-				ordersListCopy := make([]db.OrderStatus, len(ordersList))
+				ordersListCopy := make([]db.OrderStatusNew, len(ordersList))
 				copy(ordersListCopy, ordersList)
 				ordersList = nil
 				log.Println("ordersListCopy: ,будем его сохранять в базе", ordersListCopy)
