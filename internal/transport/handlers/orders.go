@@ -125,14 +125,24 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 			return
 
 		}
+
+		setContentType(w, ApplicationJSON)
+
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(orders)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
+		w.WriteHeader(http.StatusOK)
 	}
+
+}
+
+func setContentType(w http.ResponseWriter, contentType string) {
+
+	w.Header().Set("Content-Type", contentType)
 
 }
