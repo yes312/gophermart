@@ -104,10 +104,10 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
-	orders, _ := ordersInterface.([]db.OrderStatus)
-
+	orders, ok := ordersInterface.([]db.OrderStatus)
+	h.logger.Info("===============================", orders)
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case errors.Is(err, sql.ErrNoRows) || !ok:
 		// если данных нет, то эта лшибка не выпадает. т.к. err=nil
 		h.logger.Info("нет данных о заказах")
 		http.Error(w, err.Error(), http.StatusNoContent)
