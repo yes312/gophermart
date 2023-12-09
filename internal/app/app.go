@@ -7,7 +7,6 @@ import (
 	db "gophermart/internal/database"
 	"gophermart/internal/services"
 	transport "gophermart/internal/transport/handlers"
-	"log"
 	"net/http"
 	"sync"
 
@@ -45,7 +44,6 @@ func New(ctx context.Context, config *config.Config) *Server {
 
 func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup) error {
 
-	log.Println("===Запуск сервера==")
 	logger, err := logger.NewLogger(s.config.LoggerLevel)
 
 	if err != nil {

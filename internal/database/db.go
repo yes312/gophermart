@@ -62,8 +62,6 @@ func New(ctx context.Context, DatabaseURI string, MigrationsPath string) (*Stora
 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	}
 
-	fmt.Println("Project root: ", getProjectRoot())
-
 	// exePath, err := filepath.Abs(filepath.Dir(""))
 	// if err != nil {
 	// 	return nil, err
@@ -95,7 +93,7 @@ func (storage *Storage) Close() error {
 }
 
 func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migrations string) (*sql.DB, error) {
-	// migrations = "c:/Users/Andrey/go/src/github.com/yes312/gophermart/migrations"
+
 	path := fmt.Sprintf("file://%s", migrations)
 	m, err := migrate.New(path, DatabaseURI)
 	if err != nil {
@@ -123,38 +121,6 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migration
 	// if err != nil {
 	// 	return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	// }
-
-	// создание таблиц
-	// _, err := db.Exec(`
-	// 	CREATE TABLE IF NOT EXISTS users (
-	// 		user_id VARCHAR PRIMARY KEY,
-	// 		hash VARCHAR NOT NULL
-	// 	);
-
-	// 	CREATE TABLE IF NOT EXISTS orders (
-	// 		number VARCHAR PRIMARY KEY,
-	// 		user_id VARCHAR NOT NULL,
-	// 		uploaded_at timestamp NOT NULL,
-	// 		FOREIGN KEY (user_id) REFERENCES users(user_id)
-	// 	);
-
-	// 	CREATE TABLE IF NOT EXISTS billing (
-	// 		order_number VARCHAR NOT NULL,
-	// 		status VARCHAR NOT NULL,
-	// 		accrual int,
-	// 		uploaded_at timestamp NOT NULL,
-	// 		time timestamp NOT NULL,
-	// 		FOREIGN KEY (order_number) REFERENCES orders(number),
-	// 		CONSTRAINT unique_order_number_status UNIQUE (order_number, status)
-	// 	);
-
-	// `)
-
-	// if err != nil {
-	// 	return nil, fmt.Errorf("ошибка при создании таблиц  %w", err)
-	// }
-
-	// return db, nil
 
 }
 

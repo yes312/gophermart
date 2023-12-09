@@ -86,7 +86,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, UserID)
-	setResponseHeaders(w, ApplicationJSON, http.StatusOK)
+	setResponseHeaders(w, ApplicationJSON, http.StatusAccepted)
 
 }
 

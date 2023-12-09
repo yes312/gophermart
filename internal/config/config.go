@@ -59,14 +59,16 @@ func NewConfig(flag Flags) (*Config, error) {
 	}
 
 	c.LoggerLevel = "Info"
-
+	// ВОПРОСМЕНТОРУ в этом месте я пытаюсь прочитать конфиг из файла key.toml в windows файл прочитается, если папка с файлом будет лежать в одной
+	// папке с main. В linux на git тестах. прочитается если папка с файлом будет лежать в корне git репозитория.
+	// как решить этот вопрос?
 	filePath := filepath.Join("configs", "key.toml")
-
 	_, err := toml.DecodeFile(filePath, &c)
 	if err != nil {
-		return &Config{}, err
+		c.Key = "secret"
+		log.Println("Error: ", err)
 	}
-	// c.Key = "secret"
+
 	c.MigrationsPath = "migrations"
 	c.TokenExp = time.Hour * 999
 	c.AccrualRequestInterval = 10
