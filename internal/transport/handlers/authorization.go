@@ -75,13 +75,13 @@ func (h *handlersData) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIntreface, err := h.storage.WithRetry(h.ctx, h.storage.GetUser(h.ctx, data.Login))
+	userInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetUser(h.ctx, data.Login))
 
 	// var user db.User
-	user, _ := userIntreface.(db.User)
+	user, ok := userInterface.(db.User)
 
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case errors.Is(err, sql.ErrNoRows) || !ok:
 
 		h.logger.Errorf("Пользователя %w не существует", data.Login)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
