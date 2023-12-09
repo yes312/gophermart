@@ -45,7 +45,12 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 	// 500 — внутренняя ошибка сервера.
 
 	key := UserID("user")
-	userID := r.Context().Value(key).(string)
+	userID, ok := r.Context().Value(key).(string)
+	if !ok {
+		h.logger.Errorf("путой юзер детектед")
+		http.Error(w, "wrong user id", http.StatusUnauthorized)
+		return
+	}
 
 	var data db.OrderSum
 
