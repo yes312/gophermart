@@ -4,7 +4,10 @@ import (
 	"gophermart/utils"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 // Сервис должен поддерживать конфигурирование следующими методами:
@@ -57,13 +60,13 @@ func NewConfig(flag Flags) (*Config, error) {
 
 	c.LoggerLevel = "Info"
 
-	// filePath := "configs/key.toml"
+	filePath := filepath.Join("configs,", "key.toml")
 
-	// _, err := toml.DecodeFile(filePath, &c)
-	// if err != nil {
-	// 	return &Config{}, err
-	// }
-	c.Key = "secret"
+	_, err := toml.DecodeFile(filePath, &c)
+	if err != nil {
+		return &Config{}, err
+	}
+	// c.Key = "secret"
 	c.MigrationsPath = "migrations"
 	c.TokenExp = time.Hour * 999
 	c.AccrualRequestInterval = 10
