@@ -35,7 +35,7 @@ type StoragerDB interface {
 	WithRetry(context.Context, dbOperation) (interface{}, error)
 	GetWithdrawals(context.Context, string) dbOperation
 	GetNewProcessedOrders(context.Context) dbOperation
-	PutStatuses(context.Context, *[]OrderStatus) dbOperation
+	PutStatuses(context.Context, *[]OrderStatusNew) dbOperation
 }
 
 type Storage struct {

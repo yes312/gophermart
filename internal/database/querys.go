@@ -250,7 +250,7 @@ func (storage *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
 	}
 }
 
-func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatus) dbOperation {
+func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatusNew) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		t := time.Now()
