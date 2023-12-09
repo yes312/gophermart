@@ -275,7 +275,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 		_, err := tx.ExecContext(ctx, query, t)
 
 		// В целях отладки
-		fmt.Println(query)
+		fmt.Println("В целях отладки", query)
 
 		return OrderUserID{}, err
 	}

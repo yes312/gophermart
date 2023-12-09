@@ -152,7 +152,9 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 				mutex.Unlock()
 
 				if _, err := a.storage.WithRetry(ctx, a.storage.PutStatuses(ctx, &ordersListCopy)); err != nil {
-					a.logger.Error(err)
+					a.logger.Error("ошибка при сохранении статусов", err)
+				} else {
+					a.logger.Info("статусы сохранены")
 				}
 			}
 
