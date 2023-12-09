@@ -44,7 +44,7 @@ func New(ctx context.Context, storage db.StoragerDB, logger *zap.SugaredLogger) 
 func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
 	// ordersNumber := chi.URLParam(r, "ordersNumber")
-	setContentType(w, ApplicationJSON)
+
 	body, err := (io.ReadAll(r.Body))
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
@@ -106,7 +106,6 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 
 	orders, _ := ordersInterface.([]db.OrderStatus)
 
-	setContentType(w, ApplicationJSON)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		// если данных нет, то эта лшибка не выпадает. т.к. err=nil
@@ -129,7 +128,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(orders)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -137,11 +136,5 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		}
 		w.WriteHeader(http.StatusOK)
 	}
-
-}
-
-func setContentType(w http.ResponseWriter, contentType string) {
-
-	w.Header().Set("Content-Type", contentType)
 
 }

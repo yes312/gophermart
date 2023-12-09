@@ -25,6 +25,7 @@ func (h *handlersData) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// #ВОПРОСМЕНТОРУ  получаем юзера, и передаем его дальше через контекст. Не знаю хороший ли способ. Возможно есть более предпочтительный?
 		ctx := context.WithValue(r.Context(), UserID("user"), user)
+		w.Header().Set("Content-Type", ApplicationJSON)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
