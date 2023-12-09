@@ -44,7 +44,7 @@ func New(ctx context.Context, storage db.StoragerDB, logger *zap.SugaredLogger) 
 func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
 	// ordersNumber := chi.URLParam(r, "ordersNumber")
-
+	setContentType(w, ApplicationJSON)
 	body, err := (io.ReadAll(r.Body))
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
@@ -106,6 +106,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 
 	orders, _ := ordersInterface.([]db.OrderStatus)
 
+	setContentType(w, ApplicationJSON)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		// если данных нет, то эта лшибка не выпадает. т.к. err=nil
@@ -125,8 +126,6 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 			return
 
 		}
-
-		setContentType(w, ApplicationJSON)
 
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(orders)

@@ -15,7 +15,7 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(key).(string)
 
 	balanceInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetBalance(h.ctx, userID))
-
+	setContentType(w, ApplicationJSON)
 	if err != nil {
 		h.logger.Errorf("ошибка при получении баланса: %w", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -49,7 +49,7 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(key).(string)
 
 	var data db.OrderSum
-
+	setContentType(w, ApplicationJSON)
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -97,7 +97,7 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(key).(string)
 
 	withdrawalsInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetWithdrawals(h.ctx, userID))
-
+	setContentType(w, ApplicationJSON)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 
