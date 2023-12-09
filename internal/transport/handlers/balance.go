@@ -32,7 +32,6 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	setResponseHeaders(w, ApplicationJSON, http.StatusOK)
 
 }
 
@@ -119,7 +118,7 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
+
 	}
 
 }

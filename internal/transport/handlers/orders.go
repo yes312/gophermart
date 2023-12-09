@@ -105,7 +105,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
 	orders, ok := ordersInterface.([]db.OrderStatus)
-	h.logger.Info("===============================", orders)
+	h.logger.Info("===============================", orders, ok)
 	switch {
 	case errors.Is(err, sql.ErrNoRows) || !ok:
 		// если данных нет, то эта лшибка не выпадает. т.к. err=nil
@@ -133,7 +133,6 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 	}
 
 }

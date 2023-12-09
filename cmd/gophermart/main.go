@@ -29,6 +29,12 @@ func init() {
 
 func main() {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Возникла паника!!!!!!!!:", r)
+		}
+	}()
+
 	log.Println("====Запуск MAIN====")
 	flag.Parse()
 
