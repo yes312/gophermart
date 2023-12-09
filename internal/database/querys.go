@@ -53,14 +53,12 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
-		getOrderQuery := `
-		SELECT orders.number, users.user_id
-		FROM orders
-		LEFT JOIN users ON orders.user_id = users.user_id
-		WHERE orders.number = $1`
+		getOrderQuery := `SELECT number, user_id FROM orders
+						  WHERE orders.number = $1`
 
 		var orderUserID OrderUserID
 		err := tx.QueryRowContext(ctx, getOrderQuery, orderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
+
 		switch {
 		case err == sql.ErrNoRows:
 			t := time.Now() //.Format(time.RFC3339)
@@ -70,7 +68,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 			if err != nil {
 				return OrderUserID{}, err
 			}
-			time.Sleep(time.Second)
+
 			addBillingQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 								VALUES ($1, 'NEW', 0, $2, CURRENT_TIMESTAMP)`
 			_, err = tx.ExecContext(ctx, addBillingQuery, orderNumber, t)
