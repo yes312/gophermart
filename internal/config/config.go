@@ -71,8 +71,8 @@ func NewConfig(flag Flags) (*Config, error) {
 
 	c.MigrationsPath = "migrations"
 	c.TokenExp = time.Hour * 999
-	c.AccrualRequestInterval = 10
-	c.AccuralPuttingDBInterval = 5
+	c.AccrualRequestInterval = 2
+	c.AccuralPuttingDBInterval = 1
 
 	return &c, nil
 

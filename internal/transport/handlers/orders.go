@@ -123,7 +123,6 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 			h.logger.Info("нет данных о заказах")
 			setResponseHeaders(w, ApplicationJSON, http.StatusNoContent)
 			return
-
 		}
 
 		encoder := json.NewEncoder(w)
