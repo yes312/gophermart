@@ -130,6 +130,7 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 	go func() {
 		for v := range ordersFromAccrual {
 			ordersList = append(ordersList, v)
+			log.Println("добавили в ordersList: ", v, ordersList)
 		}
 	}()
 
@@ -147,6 +148,7 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 				ordersListCopy := make([]db.OrderStatus, len(ordersList))
 				copy(ordersListCopy, ordersList)
 				ordersList = nil
+				log.Println("ordersListCopy: ,будем его сохранять в базе", ordersListCopy)
 				mutex.Unlock()
 
 				if _, err := a.storage.WithRetry(ctx, a.storage.PutStatuses(ctx, &ordersListCopy)); err != nil {
