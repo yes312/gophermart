@@ -196,7 +196,7 @@ func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOpe
 		}
 		defer rows.Close()
 
-		withdrawalsList := make([]Withdrawal, 0)
+		var withdrawalsList []Withdrawal
 		for rows.Next() {
 			var w Withdrawal
 			err := rows.Scan(&w.OrderNumber, &w.Sum, &w.ProcessedAt)

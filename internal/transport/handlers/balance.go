@@ -97,9 +97,10 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(key).(string)
 
 	withdrawalsInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetWithdrawals(h.ctx, userID))
+	withdrawals, ok := withdrawalsInterface.([]db.Withdrawal)
 
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case errors.Is(err, sql.ErrNoRows) || !ok:
 
 		h.logger.Info("нет данных о выводе средств")
 		http.Error(w, err.Error(), http.StatusNoContent)
@@ -110,7 +111,7 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	default:
-		withdrawals, _ := withdrawalsInterface.([]db.Withdrawal)
+
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(withdrawals)
 		if err != nil {
