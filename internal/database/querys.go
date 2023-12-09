@@ -91,14 +91,15 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		query := `SELECT orders.number, billing.status, billing.accrual, billing.uploaded_at
-		FROM orders 
-		JOIN billing ON orders.number = billing.order_number
-		WHERE orders.user_id = $1
-		AND billing.time = (
-		SELECT MAX(time)
-		FROM billing
-		WHERE billing.order_number = orders.number
-		AND billing.status != 'WITHDRAWN')`
+				 FROM orders 
+				 JOIN billing ON orders.number = billing.order_number
+				 WHERE orders.user_id = $1
+				 AND billing.time = (
+				 SELECT MAX(time)
+				 FROM billing
+				 WHERE billing.order_number = orders.number
+				 AND billing.status != 'WITHDRAWN')
+				 ORDER BY billing.uploaded_at ASC`
 
 		rows, err := tx.QueryContext(ctx, query, userID)
 		if err != nil {
