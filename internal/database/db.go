@@ -94,7 +94,6 @@ func (storage *Storage) Close() error {
 
 }
 
-// пока миграции создаем тут. думаю, нужно переписать
 func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migrations string) (*sql.DB, error) {
 	// migrations = "c:/Users/Andrey/go/src/github.com/yes312/gophermart/migrations"
 	path := fmt.Sprintf("file://%s", migrations)
