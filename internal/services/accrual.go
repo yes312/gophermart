@@ -97,7 +97,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 				Get(adr)
 
 			if err != nil {
-				a.logger.Error(err)
+				a.logger.Errorf("ошибка при выполнении response: %w", err)
 			} else {
 				var order db.OrderStatus
 
@@ -109,7 +109,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 					a.logger.Errorf("Ошибка при декодировании JSON: %w", err)
 					continue
 				} else {
-					fmt.Println(order)
+					fmt.Println("получено из accrual: ", order)
 					out <- order
 				}
 

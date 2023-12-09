@@ -105,7 +105,7 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 		}
 		defer rows.Close()
 
-		orderStatusList := make([]OrderStatus, 0)
+		var orderStatusList []OrderStatus
 		for rows.Next() {
 			var ordS OrderStatus
 			err := rows.Scan(&ordS.Number, &ordS.Status, &ordS.Accrual, &(ordS.UploadedAt))
@@ -229,7 +229,7 @@ func (storage *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
 		var ordersList []string
 		rows, err := tx.QueryContext(ctx, query)
 		if err != nil {
-			return ordersList, err
+			return nil, err
 		}
 		defer rows.Close()
 
