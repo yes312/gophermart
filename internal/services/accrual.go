@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	db "gophermart/internal/database"
+	"log"
 	"sync"
 	"time"
 
@@ -69,6 +70,7 @@ func (a *accrual) collectOrders(ctx context.Context, orders chan<- string, wg *s
 
 			if res, ok := result.([]string); ok {
 				for _, v := range res {
+					log.Println("нашли ордера на отправку в accural: ", v)
 					orders <- v
 				}
 			}
@@ -91,6 +93,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 				return
 			}
 			adr := fmt.Sprint(url, orderNumber)
+			log.Println("адрес запроса: ", adr)
 			resp, err := client.R().
 				SetContext(ctx).
 				SetHeader("Content-Type", "application/json").
