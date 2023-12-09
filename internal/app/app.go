@@ -94,7 +94,7 @@ func (s *Server) ConfigureMux() *chi.Mux {
 		r.Post("/api/user/register", handler.Registration)
 		r.Post("/api/user/login", handler.Login)
 
-		r.Post("/api/user/orders/{ordersNumber}", handler.AuthMiddleware(handler.UploadOrders))
+		r.Post("/api/user/orders", handler.AuthMiddleware(handler.UploadOrders))
 		r.Get("/api/user/orders", handler.AuthMiddleware(handler.GetUploadedOrders))
 
 		r.Get("/api/user/balance", handler.AuthMiddleware(handler.GetBalance))

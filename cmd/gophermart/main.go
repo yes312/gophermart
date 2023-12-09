@@ -23,18 +23,11 @@ func init() {
 
 	flag.StringVar(&f.A, "a", "localhost:8080", "IP adress")
 	flag.StringVar(&f.D, "d", "postgresql://postgres:12345@localhost/praktikum?sslmode=disable", "database uri")
-
 	flag.StringVar(&f.R, "r", "http://127.0.0.1:8081", "ACCRUAL_SYSTEM_ADDRESS")
 
 }
 
 func main() {
-
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Восстановлено от паники MAIN:", r)
-		}
-	}()
 
 	log.Println("====Запуск MAIN====")
 	flag.Parse()
@@ -43,7 +36,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("====Запуск после конфига====")
 	// #ВопросМентору: нужно ли graceful shutdown реализовывать как отдельную функцию или метод и нужен ли для этого отдельный пакет?
 	// --------------------
 	c := make(chan os.Signal, 1)
@@ -58,7 +50,6 @@ func main() {
 		os.Exit(0)
 
 	}()
-	// -------------------
 
 	s := app.New(ctx, config)
 	wg := &sync.WaitGroup{}

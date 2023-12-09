@@ -8,10 +8,10 @@ import (
 	db "gophermart/internal/database"
 	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/utils"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
@@ -43,7 +43,14 @@ func New(ctx context.Context, storage db.StoragerDB, logger *zap.SugaredLogger) 
 
 func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
-	ordersNumber := chi.URLParam(r, "ordersNumber")
+	// ordersNumber := chi.URLParam(r, "ordersNumber")
+
+	body, err := (io.ReadAll(r.Body))
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+	ordersNumber := string(body)
 
 	valid, err := utils.IsValidOrderNumber(ordersNumber)
 	if err != nil {
