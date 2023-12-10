@@ -97,7 +97,12 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// +++++++++++++++++++++++++++
+	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
+	orders, ok := ordersInterface.([]db.OrderStatus)
+	h.logger.Info("===============================", orders, ok, err)
+	// +++++++++++++++++++++++++++
 	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, userID)
 	setResponseHeaders(w, ApplicationJSON, http.StatusAccepted)
 
