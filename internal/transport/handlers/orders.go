@@ -116,7 +116,9 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "wrong user id", http.StatusUnauthorized)
 		return
 	}
-
+	//++++++++++++======================
+	time.Sleep(10 * time.Second)
+	//++++++++++++++++++++++++++++++++
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
 	orders, ok := ordersInterface.([]db.OrderStatus)
