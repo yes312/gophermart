@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -58,7 +59,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 
 		var orderUserID OrderUserID
 		err := tx.QueryRowContext(ctx, getOrderQuery, orderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
-
+		log.Println("ERROR!!!", err)
 		switch {
 		case err == sql.ErrNoRows:
 			t := time.Now() //.Format(time.RFC3339)
@@ -72,6 +73,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 			addBillingQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 								VALUES ($1, 'NEW', 0, $2, CURRENT_TIMESTAMP)`
 			_, err = tx.ExecContext(ctx, addBillingQuery, orderNumber, t)
+			log.Println("ERROR!!!222 ", err)
 			if err != nil {
 				return OrderUserID{}, err
 			}

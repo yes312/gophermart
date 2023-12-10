@@ -9,6 +9,7 @@ import (
 	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/utils"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -51,6 +52,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ordersNumber := string(body)
+	log.Println("будет добавлен заказ", ordersNumber)
 
 	valid, err := utils.IsValidOrderNumber(ordersNumber)
 	if err != nil {
@@ -72,7 +74,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
 	orderUserIDInterface, err := h.storage.WithRetry(h.ctx, h.storage.AddOrder(h.ctx, ordersNumber, userID))
 	orderUserID, _ := orderUserIDInterface.(db.OrderUserID)
-
+	log.Println("orderUserID", orderUserID)
 	if err != nil {
 
 		h.logger.Errorf("Ошибка при получении заказа %w", ordersNumber)
