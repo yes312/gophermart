@@ -92,7 +92,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
 		} else {
 
-			h.logger.Infof("заказ %s уже был загружен другим пользователем %s", ordersNumber, userID)
+			h.logger.Infof("заказ %s уже был загружен другим пользователем %s", ordersNumber, orderUserID.UserID)
 			setResponseHeaders(w, ApplicationJSON, http.StatusConflict)
 			return
 		}
@@ -101,7 +101,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
 	orders, ok := ordersInterface.([]db.OrderStatus)
-	h.logger.Info("===============================", orders, ok, err)
+	h.logger.Info("ПОЛУЧАЕМ СИПСОК ВСЕХ ЗАГРУЖЕННЫх ОРДЕРОВ ПОЛЬЗОВАТЕЛЯ:", orders, ok, err)
 	// +++++++++++++++++++++++++++
 	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, userID)
 	setResponseHeaders(w, ApplicationJSON, http.StatusAccepted)
