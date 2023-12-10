@@ -152,8 +152,8 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 
 		getBalanceQuery := `
 		SELECT
-		SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual ELSE 0 END) AS PROCESSED,
-		SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual ELSE 0 END) AS WITHDRAWN
+		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual ELSE 0 END),0) AS PROCESSED,
+		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual ELSE 0 END),0) AS WITHDRAWN
 		FROM orders 
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
