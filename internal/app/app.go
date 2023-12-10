@@ -100,7 +100,7 @@ func (s *Server) ConfigureMux() *chi.Mux {
 		r.Get("/api/user/balance", handler.AuthMiddleware(handler.GetBalance))
 		r.Post("/api/user/balance/withdraw", handler.AuthMiddleware(handler.WithdrawBalance))
 
-		r.Get("/api/user/withdrawals", handler.GetWithdrawals)
+		r.Get("/api/user/withdrawals", handler.AuthMiddleware(handler.GetWithdrawals))
 
 	})
 
