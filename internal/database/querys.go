@@ -90,7 +90,7 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
-		query := `SELECT orders.number, billing.status, billing.accrual, billing.uploaded_at
+		query := `SELECT orders.number, billing.status, billing.accrual/100 as accrual, billing.uploaded_at
 				 FROM orders 
 				 JOIN billing ON orders.number = billing.order_number
 				 WHERE orders.user_id = $1
@@ -130,8 +130,8 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 
 		getBalanceQuery := `	
 		SELECT
-		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual ELSE 0 END),0) AS PROCESSED,
-		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual ELSE 0 END),0) AS WITHDRAWN
+		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual/100 ELSE 0 END),0) AS PROCESSED,
+		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual/100 ELSE 0 END),0) AS WITHDRAWN
 		FROM orders 
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
@@ -154,8 +154,8 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 
 		getBalanceQuery := `
 		SELECT
-		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual ELSE 0 END),0) AS PROCESSED,
-		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual ELSE 0 END),0) AS WITHDRAWN
+		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual/100 ELSE 0 END),0) AS PROCESSED,
+		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual/100 ELSE 0 END),0) AS WITHDRAWN
 		FROM orders 
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
@@ -174,7 +174,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		addOrderQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 		VALUES ($1, 'WITHDRAWN', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 	`
-		_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, orderSum.Sum)
+		_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, orderSum.Sum*100)
 
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
-		queryWithdrawals := `SELECT orders.number, billing.accrual AS sum, billing.uploaded_at AS processed_at
+		queryWithdrawals := `SELECT orders.number, billing.accrual/100 AS sum, billing.uploaded_at AS processed_at
 			FROM orders
 			JOIN billing ON orders.number = billing.order_number
 			WHERE orders.user_id = $1
@@ -261,7 +261,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 		builder.WriteString("VALUES\n")
 		for m, v := range *orderStatus {
 
-			builder.WriteString(fmt.Sprintf("(%s,'%s',%v,%v,%s)", v.Number, v.Status, v.Accrual, "$1", "CURRENT_TIMESTAMP"))
+			builder.WriteString(fmt.Sprintf("(%s,'%s',%v,%v,%s)", v.Number, v.Status, v.Accrual*100, "$1", "CURRENT_TIMESTAMP"))
 
 			if m == len(*orderStatus)-1 {
 				builder.WriteString("\n")
@@ -285,7 +285,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 
 func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
-		query := `SELECT order_number, status, accrual, uploaded_at, time FROM billing;`
+		query := `SELECT order_number, status, accrual/100 AS accrual, uploaded_at, time FROM billing;`
 		rows, err := tx.QueryContext(ctx, query)
 		if err != nil {
 			return nil, err
