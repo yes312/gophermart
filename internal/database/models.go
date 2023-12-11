@@ -44,4 +44,12 @@ type Withdrawal struct {
 	ProcessedAt time.Time `json:"processed_at"`
 }
 
+type Billing struct {
+	OrderNumber string    `json:"order"`
+	Status      string    `json:"status"`
+	Accrual     int       `json:"accrual"`
+	UploadedAt  time.Time `json:"uploaded_at"`
+	Time        time.Time `json:"time"`
+}
+
 var ErrNotEnoughFunds = errors.New("not enough funds on balance")

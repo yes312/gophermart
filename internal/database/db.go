@@ -36,6 +36,7 @@ type StoragerDB interface {
 	GetWithdrawals(context.Context, string) dbOperation
 	GetNewProcessedOrders(context.Context) dbOperation
 	PutStatuses(context.Context, *[]OrderStatusNew) dbOperation
+	GetBilling(context.Context) dbOperation
 }
 
 type Storage struct {

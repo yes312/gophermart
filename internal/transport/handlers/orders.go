@@ -75,6 +75,12 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 	orderUserIDInterface, err := h.storage.WithRetry(h.ctx, h.storage.AddOrder(h.ctx, ordersNumber, userID))
 	orderUserID, _ := orderUserIDInterface.(db.OrderUserID)
 	log.Println("orderUserID", orderUserID)
+
+	// +++++++++++++++++++++++++++
+	billingInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetBilling(h.ctx))
+	bilings, _ := billingInterface.([]db.Billing)
+	log.Println("BILINGS", bilings)
+
 	if err != nil {
 
 		h.logger.Errorf("Ошибка при получении заказа %w", ordersNumber)
@@ -102,6 +108,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, ok := ordersInterface.([]db.OrderStatus)
 	h.logger.Info("ПОЛУЧАЕМ СИПСОК ВСЕХ ЗАГРУЖЕННЫх ОРДЕРОВ ПОЛЬЗОВАТЕЛЯ:", orders, ok, err)
+
 	// +++++++++++++++++++++++++++
 	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, userID)
 	setResponseHeaders(w, ApplicationJSON, http.StatusAccepted)
@@ -144,7 +151,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(orders)
-		log.Println("orders", orders)
+		log.Println("ВОЗВРАЩАЕМ ЗАГРУЖЕННЫЕ ОРДЕРА", orders)
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

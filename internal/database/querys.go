@@ -282,3 +282,27 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 		return OrderUserID{}, err
 	}
 }
+
+func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
+	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
+		query := `SELECT order_number, status, accrual, uploaded_at, time FROM billing;`
+		rows, err := tx.QueryContext(ctx, query)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var billingList []Billing
+		for rows.Next() {
+			var b Billing
+			err := rows.Scan(&b.OrderNumber, &b.Status, &b.Accrual, &b.UploadedAt, &b.Time)
+			if err != nil {
+				return nil, err
+			}
+			billingList = append(billingList, b)
+		}
+		if err := rows.Err(); err != nil {
+			return billingList, err
+		}
+		return billingList, nil
+	}
+}
