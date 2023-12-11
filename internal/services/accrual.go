@@ -83,7 +83,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 	defer wg.Done()
 
 	client := resty.New()
-	url := fmt.Sprint(a.accrualSysremAdress, "/api/orders/")
+	// url := fmt.Sprint(a.accrualSysremAdress, "/api/orders/")
 	for {
 		select {
 		case <-ctx.Done():
@@ -92,12 +92,12 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 			if !ok {
 				return
 			}
-			adr := fmt.Sprint(url, orderNumber)
-			log.Println("адрес запроса: ", adr)
+			url := fmt.Sprint(a.accrualSysremAdress, "/api/orders/", orderNumber)
+			log.Println("адрес запроса: ", url)
 			resp, err := client.R().
 				SetContext(ctx).
-				SetHeader("Content-Type", "application/json").
-				Get(adr)
+				// SetHeader("Content-Type", "application/json").
+				Get(url)
 
 			if err != nil {
 				a.logger.Errorf("ошибка при выполнении response: %w", err)
@@ -108,6 +108,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 					a.logger.Errorf("wrong status code: %d order: %s", resp.StatusCode(), orderNumber)
 					continue
 				}
+				log.Println("BODY: ", string(resp.Body()))
 				if err := json.Unmarshal(resp.Body(), &order); err != nil {
 					a.logger.Errorf("Ошибка при декодировании JSON: %w", err)
 					continue
