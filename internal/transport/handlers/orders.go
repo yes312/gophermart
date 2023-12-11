@@ -117,7 +117,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	//++++++++++++======================
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	//++++++++++++++++++++++++++++++++
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
