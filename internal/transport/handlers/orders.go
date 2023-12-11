@@ -117,12 +117,12 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	//++++++++++++======================
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Microsecond)
 	//++++++++++++++++++++++++++++++++
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
 	orders, ok := ordersInterface.([]db.OrderStatus)
-	h.logger.Info("===============================", orders, ok)
+
 	switch {
 	case errors.Is(err, sql.ErrNoRows) || !ok:
 		// если данных нет, то эта лшибка не выпадает. т.к. err=nil
@@ -141,10 +141,10 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 			setResponseHeaders(w, ApplicationJSON, http.StatusNoContent)
 			return
 		}
-
+		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(orders)
-
+		log.Println("orders", orders)
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
