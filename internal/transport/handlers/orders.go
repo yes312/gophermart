@@ -44,8 +44,6 @@ func New(ctx context.Context, storage db.StoragerDB, logger *zap.SugaredLogger) 
 
 func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 
-	// ordersNumber := chi.URLParam(r, "ordersNumber")
-
 	body, err := (io.ReadAll(r.Body))
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
@@ -106,7 +104,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 	// +++++++++++++++++++++++++++
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
-	orders, ok := ordersInterface.([]db.OrderStatus)
+	orders, ok := ordersInterface.([]db.OrderStatusNew)
 	h.logger.Info("ПОЛУЧАЕМ СИПСОК ВСЕХ ЗАГРУЖЕННЫх ОРДЕРОВ ПОЛЬЗОВАТЕЛЯ:", orders, ok, err)
 
 	// +++++++++++++++++++++++++++
@@ -128,7 +126,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 	//++++++++++++++++++++++++++++++++
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
-	orders, ok := ordersInterface.([]db.OrderStatus)
+	orders, ok := ordersInterface.([]db.OrderStatusNew)
 
 	switch {
 	case errors.Is(err, sql.ErrNoRows) || !ok:

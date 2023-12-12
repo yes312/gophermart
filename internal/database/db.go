@@ -27,7 +27,7 @@ type StoragerDB interface {
 	Close() error
 	GetUser(context.Context, string) dbOperation
 	AddUser(context.Context, string, string) dbOperation
-	GetOrder(context.Context, string) dbOperation
+	// GetOrder(context.Context, string) dbOperation
 	AddOrder(context.Context, string, string) dbOperation
 	GetOrders(context.Context, string) dbOperation
 	GetBalance(context.Context, string) dbOperation

@@ -32,23 +32,23 @@ func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) dbOper
 	}
 }
 
-func (storage *Storage) GetOrder(ctx context.Context, order string) dbOperation {
-	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
-		getOrderQuery := `
-		SELECT orders.number, users.user_id
-		FROM orders
-		LEFT JOIN users ON orders.user_id = users.user_id
-		WHERE orders.number = $1`
+// func (storage *Storage) GetOrder(ctx context.Context, order string) dbOperation {
+// 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
+// 		getOrderQuery := `
+// 		SELECT orders.number, users.user_id
+// 		FROM orders
+// 		LEFT JOIN users ON orders.user_id = users.user_id
+// 		WHERE orders.number = $1`
 
-		var orderUserID OrderUserID
-		err := tx.QueryRowContext(ctx, getOrderQuery, order).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
-		if err != nil {
-			return OrderUserID{}, err
-		}
+// 		var orderUserID OrderUserID
+// 		err := tx.QueryRowContext(ctx, getOrderQuery, order).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
+// 		if err != nil {
+// 			return OrderUserID{}, err
+// 		}
 
-		return orderUserID, nil
-	}
-}
+// 		return orderUserID, nil
+// 	}
+// }
 
 func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID string) dbOperation {
 
@@ -62,8 +62,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 		log.Println("ERROR!!!", err)
 		switch {
 		case err == sql.ErrNoRows:
-			t := time.Now() //.Format(time.RFC3339)
-
+			t := time.Now()
 			addOrderQuery := `INSERT INTO orders(number, user_id, uploaded_at) VALUES ($1, $2, $3)`
 			_, err = tx.ExecContext(ctx, addOrderQuery, orderNumber, userID, t)
 			if err != nil {
@@ -90,7 +89,7 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
-		query := `SELECT orders.number, billing.status, billing.accrual/100 as accrual, billing.uploaded_at
+		query := `SELECT orders.number, billing.status, billing.accrual as accrual, billing.uploaded_at
 				 FROM orders 
 				 JOIN billing ON orders.number = billing.order_number
 				 WHERE orders.user_id = $1
@@ -107,13 +106,14 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 		}
 		defer rows.Close()
 
-		var orderStatusList []OrderStatus
+		var orderStatusList []OrderStatusNew
 		for rows.Next() {
-			var ordS OrderStatus
-			err := rows.Scan(&ordS.Number, &ordS.Status, &ordS.Accrual, &(ordS.UploadedAt))
+			var ordS OrderStatusNew
+			err := rows.Scan(&ordS.Number, &ordS.Status, &ordS.Accrual, &ordS.UploadedAt)
 			if err != nil {
 				return nil, err
 			}
+			ordS.Accrual = ordS.Accrual / 100
 			orderStatusList = append(orderStatusList, ordS)
 		}
 
@@ -283,6 +283,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 	}
 }
 
+// этот метод написан для тестирования
 func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 		query := `SELECT order_number, status, accrual/100 AS accrual, uploaded_at, time FROM billing;`

@@ -1,17 +1,17 @@
 CREATE TABLE IF NOT EXISTS users (		
-    user_id VARCHAR PRIMARY KEY,
-	hash VARCHAR NOT NULL
+    user_id VARCHAR PRIMARY KEY CHECK(user_id <> ''),
+	hash VARCHAR NOT NULL CHECK (hash <> '')
 );
 	
 CREATE TABLE IF NOT EXISTS orders (
-	number VARCHAR PRIMARY KEY,
-	user_id VARCHAR NOT NULL,
+	number VARCHAR PRIMARY KEY CHECK(number <> ''),
+	user_id VARCHAR NOT NULL CHECK(user_id <> ''),
 	uploaded_at timestamp NOT NULL,
 	FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 	
 CREATE TABLE IF NOT EXISTS billing (
-	order_number VARCHAR NOT NULL,
+	order_number VARCHAR NOT NULL CHECK(order_number <> ''),
 	status VARCHAR NOT NULL,
 	accrual int, 
 	uploaded_at timestamp NOT NULL,

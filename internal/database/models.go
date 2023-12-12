@@ -10,12 +10,12 @@ type User struct {
 	Hash  string
 }
 
-type OrderStatus struct {
-	Number     string    `json:"order"`
-	Status     string    `json:"status"`
-	Accrual    int       `json:"accrual"`
-	UploadedAt time.Time `json:"uploaded_at"`
-}
+//	type OrderStatus struct {
+//		Number     string    `json:"order"`
+//		Status     string    `json:"status"`
+//		Accrual    int       `json:"accrual"`
+//		UploadedAt time.Time `json:"uploaded_at"`
+//	}
 type OrderStatusNew struct {
 	Number     string    `json:"order"`
 	Status     string    `json:"status"`
