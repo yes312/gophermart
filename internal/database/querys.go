@@ -98,7 +98,7 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 				 FROM billing
 				 WHERE billing.order_number = orders.number
 				 AND billing.status != 'WITHDRAWN')
-				 ORDER BY billing.uploaded_at ASC`
+				 ORDER BY billing.time ASC`
 
 		rows, err := tx.QueryContext(ctx, query, userID)
 		if err != nil {
