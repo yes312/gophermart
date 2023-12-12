@@ -185,7 +185,7 @@ func (ts *tSuite) TestPutStatuses() {
 	ts.NoError(err)
 
 	testStatuses := []OrderStatusNew{
-		{Number: "112233", Status: "PROCESSING", Accrual: 2.6, UploadedAt: time.Now()},
+		{Number: "112233", Status: "PROCESSING", Accrual: 729.98, UploadedAt: time.Now()},
 	}
 
 	_, err = ts.storage.WithRetry(ctx, ts.storage.PutStatuses(ctx, &testStatuses))

@@ -130,8 +130,8 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 
 		getBalanceQuery := `	
 		SELECT
-		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual/100 ELSE 0 END),0) AS PROCESSED,
-		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual/100 ELSE 0 END),0) AS WITHDRAWN
+		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual ELSE 0 END),0) AS PROCESSED,
+		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual ELSE 0 END),0) AS WITHDRAWN
 		FROM orders 
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
@@ -144,6 +144,8 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 			return Balance{}, err
 		}
 
+		balance.Current = balance.Current / 100
+		balance.Withdraw = balance.Withdraw / 100
 		return balance, err
 	}
 }
@@ -154,8 +156,8 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 
 		getBalanceQuery := `
 		SELECT
-		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual/100 ELSE 0 END),0) AS PROCESSED,
-		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual/100 ELSE 0 END),0) AS WITHDRAWN
+		COALESCE(SUM(CASE WHEN billing.status = 'PROCESSED' THEN billing.accrual ELSE 0 END),0) AS PROCESSED,
+		COALESCE(SUM(CASE WHEN billing.status = 'WITHDRAWN' THEN billing.accrual ELSE 0 END),0) AS WITHDRAWN
 		FROM orders 
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
@@ -167,6 +169,9 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		if err != nil {
 			return nil, err
 		}
+		balance.Current = balance.Current / 100
+		balance.Withdraw = balance.Withdraw / 100
+
 		if balance.Current-balance.Withdraw < orderSum.Sum {
 			return nil, ErrNotEnoughFunds
 		}
@@ -183,7 +188,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
-		queryWithdrawals := `SELECT orders.number, billing.accrual/100 AS sum, billing.uploaded_at AS processed_at
+		queryWithdrawals := `SELECT orders.number, billing.accrual AS sum, billing.uploaded_at AS processed_at
 			FROM orders
 			JOIN billing ON orders.number = billing.order_number
 			WHERE orders.user_id = $1
@@ -203,6 +208,7 @@ func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOpe
 			if err != nil {
 				return nil, err
 			}
+			w.Sum = w.Sum / 100
 			withdrawalsList = append(withdrawalsList, w)
 		}
 		if err := rows.Err(); err != nil {
@@ -286,7 +292,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 // этот метод написан для тестирования
 func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
-		query := `SELECT order_number, status, accrual/100 AS accrual, uploaded_at, time FROM billing;`
+		query := `SELECT order_number, status, accrual AS accrual, uploaded_at, time FROM billing;`
 		rows, err := tx.QueryContext(ctx, query)
 		if err != nil {
 			return nil, err
@@ -299,6 +305,7 @@ func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
 			if err != nil {
 				return nil, err
 			}
+			b.Accrual = b.Accrual / 100
 			billingList = append(billingList, b)
 		}
 		if err := rows.Err(); err != nil {

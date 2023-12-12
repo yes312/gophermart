@@ -10,12 +10,6 @@ type User struct {
 	Hash  string
 }
 
-//	type OrderStatus struct {
-//		Number     string    `json:"order"`
-//		Status     string    `json:"status"`
-//		Accrual    int       `json:"accrual"`
-//		UploadedAt time.Time `json:"uploaded_at"`
-//	}
 type OrderStatusNew struct {
 	Number     string    `json:"order"`
 	Status     string    `json:"status"`
@@ -24,13 +18,13 @@ type OrderStatusNew struct {
 }
 
 type Balance struct {
-	Current  int `json:"current"`
-	Withdraw int `json:"withdraw"`
+	Current  float64 `json:"current"`
+	Withdraw float64 `json:"withdraw"`
 }
 
 type OrderSum struct {
-	OrderNumber string `json:"order"`
-	Sum         int    `json:"sum"`
+	OrderNumber string  `json:"order"`
+	Sum         float64 `json:"sum"`
 }
 
 type OrderUserID struct {
@@ -40,14 +34,14 @@ type OrderUserID struct {
 
 type Withdrawal struct {
 	OrderNumber string    `json:"order"`
-	Sum         int       `json:"sum"`
+	Sum         float64   `json:"sum"`
 	ProcessedAt time.Time `json:"processed_at"`
 }
 
 type Billing struct {
 	OrderNumber string    `json:"order"`
 	Status      string    `json:"status"`
-	Accrual     int       `json:"accrual"`
+	Accrual     float64   `json:"accrual"`
 	UploadedAt  time.Time `json:"uploaded_at"`
 	Time        time.Time `json:"time"`
 }
