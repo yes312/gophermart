@@ -209,6 +209,12 @@ func (ts *tSuite) TestPutStatuses() {
 	_, err = ts.storage.WithRetry(ctx, ts.storage.WithdrawBalance(ctx, expectedUser.Login, orderSum))
 	ts.NoError(err)
 
+	// тут же тестируем и GetWithdrawals
+	withdrawalsInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetWithdrawals(ctx, orderUserID.UserID))
+	withdrawals, ok := withdrawalsInterface.([]Withdrawal)
+	ts.True(ok)
+	fmt.Println(withdrawals)
+
 }
 
 func (ts *tSuite) TestGetOrders() {

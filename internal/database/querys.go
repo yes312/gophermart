@@ -220,7 +220,7 @@ func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOpe
 			JOIN billing ON orders.number = billing.order_number
 			WHERE orders.user_id = $1
 			AND billing.status = 'WITHDRAWN'
-			ORDER BY billing.uploaded_at ';`
+			ORDER BY billing.uploaded_at asc;`
 
 		rows, err := tx.QueryContext(ctx, queryWithdrawals, userID)
 		if err != nil {
