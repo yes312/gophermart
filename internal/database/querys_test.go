@@ -242,6 +242,22 @@ func (ts *tSuite) TestGetOrders() {
 	ts.Equal("NEW", orders[0].Status)
 	ts.Equal("1177", orders[1].Number)
 	ts.Equal("NEW", orders[1].Status)
+
+	// добавляем ордер с другим статусом
+	testStatuses := []OrderStatusNew{
+		{Number: "112233", Status: "PROCESSING", Accrual: 729.98, UploadedAt: time.Now()},
+	}
+
+	_, err = ts.storage.WithRetry(ctx, ts.storage.PutStatuses(ctx, &testStatuses))
+	ts.NoError(err)
+
+	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
+	ts.NoError(err)
+	orders, ok = ordersInterface.([]OrderStatusNew)
+	ts.True(ok)
+	// ts.Equal(testStatuses[0].Number, orders[0].Number)
+	// ts.Equal(testStatuses[0].Accrual, orders[0].Accrual)
+	fmt.Println(orders)
 }
 
 func (ts *tSuite) SetupSuite() {
