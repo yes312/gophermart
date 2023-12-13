@@ -184,10 +184,10 @@ func (ts *tSuite) TestPutStatuses() {
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
 
+	// тест
 	testStatuses := []OrderStatusNew{
-		{Number: "112233", Status: "PROCESSING", Accrual: 729.98, UploadedAt: time.Now()},
+		{Number: "112233", Status: "PROCESSED", Accrual: 729.98, UploadedAt: time.Now()},
 	}
-
 	_, err = ts.storage.WithRetry(ctx, ts.storage.PutStatuses(ctx, &testStatuses))
 	ts.NoError(err)
 
@@ -197,6 +197,18 @@ func (ts *tSuite) TestPutStatuses() {
 	ts.True(ok)
 	ts.Equal(testStatuses[0].Number, orders[0].Number)
 	ts.Equal(testStatuses[0].Accrual, orders[0].Accrual)
+
+	// чтоб не дублировать код на основе тестов что выше тестируем WithdrawBalance
+	orderUserID = OrderUserID{OrderNumber: "100", UserID: "Jhon"}
+	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
+	ts.NoError(err)
+	orderSum := OrderSum{
+		OrderNumber: "100",
+		Sum:         100.33,
+	}
+	_, err = ts.storage.WithRetry(ctx, ts.storage.WithdrawBalance(ctx, expectedUser.Login, orderSum))
+	ts.NoError(err)
+
 }
 
 func (ts *tSuite) TestGetOrders() {
@@ -255,9 +267,17 @@ func (ts *tSuite) TestGetOrders() {
 	ts.NoError(err)
 	orders, ok = ordersInterface.([]OrderStatusNew)
 	ts.True(ok)
-	// ts.Equal(testStatuses[0].Number, orders[0].Number)
-	// ts.Equal(testStatuses[0].Accrual, orders[0].Accrual)
+	ts.Equal(testStatuses[0].Number, orders[1].Number)
+	ts.Equal(testStatuses[0].Accrual, orders[1].Accrual)
 	fmt.Println(orders)
+}
+
+func (ts *tSuite) TestWithdrawBalance() {
+
+	ts.T().Log("Тест TestWithdrawBalance()")
+	ctx := context.Background()
+	ts.TruncateAllTables(ctx)
+
 }
 
 func (ts *tSuite) SetupSuite() {

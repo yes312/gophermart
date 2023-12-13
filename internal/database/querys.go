@@ -176,6 +176,31 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 			return nil, ErrNotEnoughFunds
 		}
 
+		// ======
+		getOrderQuery := `SELECT number, user_id FROM orders
+						  WHERE orders.number = $1`
+
+		var orderUserID OrderUserID
+		err = tx.QueryRowContext(ctx, getOrderQuery, orderSum.OrderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
+
+		switch {
+		case err == sql.ErrNoRows:
+			t := time.Now()
+			addOrderQuery := `INSERT INTO orders(number, user_id, uploaded_at) VALUES ($1, $2, $3)`
+			_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, userID, t)
+			if err != nil {
+				return OrderUserID{}, err
+			}
+		case err != nil:
+			return OrderUserID{}, fmt.Errorf("ошибка при получении ордера: %w", err)
+		}
+
+		if orderUserID.UserID != userID {
+			return OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
+		}
+
+		//======
+
 		addOrderQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 		VALUES ($1, 'WITHDRAWN', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 	`
