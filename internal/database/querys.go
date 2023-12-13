@@ -172,6 +172,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		balance.Current = balance.Current / 100
 		balance.Withdraw = balance.Withdraw / 100
 
+		fmt.Println("++++balance", balance)
 		if balance.Current-balance.Withdraw < orderSum.Sum {
 			return nil, ErrNotEnoughFunds
 		}
@@ -182,7 +183,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 
 		var orderUserID OrderUserID
 		err = tx.QueryRowContext(ctx, getOrderQuery, orderSum.OrderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
-
+		fmt.Println("errrrrr", err, orderUserID)
 		switch {
 		case err == sql.ErrNoRows:
 			t := time.Now()
@@ -196,6 +197,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		}
 
 		if orderUserID.UserID != userID {
+			fmt.Println("USERS", orderUserID.UserID, userID)
 			return OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
 		}
 

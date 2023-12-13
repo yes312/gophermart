@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	db "gophermart/internal/database"
 	"gophermart/utils"
 	"net/http"
@@ -74,7 +75,7 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unprocessable Entity", http.StatusUnprocessableEntity)
 		return
 	}
-
+	fmt.Println(userID, data)
 	_, err = h.storage.WithRetry(h.ctx, h.storage.WithdrawBalance(h.ctx, userID, data))
 	switch {
 	case errors.Is(err, db.ErrNotEnoughFunds):
