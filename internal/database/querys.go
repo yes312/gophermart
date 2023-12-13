@@ -194,11 +194,11 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 			}
 		case err != nil:
 			return OrderUserID{}, fmt.Errorf("ошибка при получении ордера: %w", err)
-		}
-
-		if orderUserID.UserID != userID {
-			fmt.Println("USERS", orderUserID.UserID, userID)
-			return OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
+		default:
+			if orderUserID.UserID != userID {
+				fmt.Println("USERS", orderUserID.UserID, userID)
+				return OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
+			}
 		}
 
 		//======
