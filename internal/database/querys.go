@@ -113,7 +113,7 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 			if err != nil {
 				return nil, err
 			}
-			ordS.Accrual = ordS.Accrual / 100
+			ordS.Accrual = ordS.Accrual / 1000
 			orderStatusList = append(orderStatusList, ordS)
 		}
 
@@ -144,8 +144,8 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 			return Balance{}, err
 		}
 
-		balance.Current = (balance.Current - balance.Withdraw) / 100
-		balance.Withdraw = balance.Withdraw / 100
+		balance.Current = (balance.Current - balance.Withdraw) / 1000
+		balance.Withdraw = balance.Withdraw / 1000
 		return balance, err
 	}
 }
@@ -169,8 +169,8 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		if err != nil {
 			return nil, err
 		}
-		balance.Current = (balance.Current - balance.Withdraw) / 100
-		balance.Withdraw = balance.Withdraw / 100
+		balance.Current = (balance.Current - balance.Withdraw) / 1000
+		balance.Withdraw = balance.Withdraw / 1000
 
 		fmt.Println("++++balance", balance)
 		if balance.Current-balance.Withdraw < orderSum.Sum {
@@ -206,7 +206,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		addOrderQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 		VALUES ($1, 'WITHDRAWN', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 	`
-		_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, orderSum.Sum*100)
+		_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, orderSum.Sum*1000)
 
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOpe
 			if err != nil {
 				return nil, err
 			}
-			w.Sum = w.Sum / 100
+			w.Sum = w.Sum / 1000
 			withdrawalsList = append(withdrawalsList, w)
 		}
 		if err := rows.Err(); err != nil {
@@ -294,7 +294,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 		builder.WriteString("VALUES\n")
 		for m, v := range *orderStatus {
 
-			builder.WriteString(fmt.Sprintf("(%s,'%s',%v,%v,%s)", v.Number, v.Status, v.Accrual*100, "$1", "CURRENT_TIMESTAMP"))
+			builder.WriteString(fmt.Sprintf("(%s,'%s',%v,%v,%s)", v.Number, v.Status, v.Accrual*1000, "$1", "CURRENT_TIMESTAMP"))
 
 			if m == len(*orderStatus)-1 {
 				builder.WriteString("\n")
@@ -332,7 +332,7 @@ func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
 			if err != nil {
 				return nil, err
 			}
-			b.Accrual = b.Accrual / 100
+			b.Accrual = b.Accrual / 1000
 			billingList = append(billingList, b)
 		}
 		if err := rows.Err(); err != nil {
