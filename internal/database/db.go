@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gophermart/pkg/logger"
 	"gophermart/utils"
+	"log"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -62,7 +63,7 @@ func New(ctx context.Context, DatabaseURI string, MigrationsPath string) (*Stora
 	if err != nil {
 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	}
-
+	log.Println(DatabaseURI, "is DatabaseURI")
 	// exePath, err := filepath.Abs(filepath.Dir(""))
 	// if err != nil {
 	// 	return nil, err
