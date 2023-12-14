@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	db "gophermart/internal/database"
-	"log"
 	"sync"
 	"time"
 
@@ -70,7 +69,7 @@ func (a *accrual) collectOrders(ctx context.Context, orders chan<- string, wg *s
 
 			if res, ok := result.([]string); ok {
 				for _, v := range res {
-					log.Println("нашли ордера на отправку в accural: ", v)
+					// log.Println("нашли ордера на отправку в accural: ", v)
 					orders <- v
 				}
 			}
@@ -93,7 +92,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 				return
 			}
 			url := fmt.Sprint(a.accrualSysremAdress, "/api/orders/", orderNumber)
-			log.Println("адрес запроса: ", url)
+			// log.Println("адрес запроса: ", url)
 			resp, err := client.R().
 				SetContext(ctx).
 				// SetHeader("Content-Type", "application/json").
@@ -108,12 +107,12 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 					a.logger.Errorf("wrong status code: %d order: %s", resp.StatusCode(), orderNumber)
 					continue
 				}
-				log.Println("BODY: ", string(resp.Body()))
+				// log.Println("BODY: ", string(resp.Body()))
 				if err := json.Unmarshal(resp.Body(), &order); err != nil {
 					a.logger.Errorf("Ошибка при декодировании JSON: %w", err)
 					continue
 				} else {
-					fmt.Println("получено из accrual: ", order)
+					// fmt.Println("получено из accrual: ", order)
 					out <- order
 				}
 
@@ -131,7 +130,7 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 	go func() {
 		for v := range ordersFromAccrual {
 			ordersList = append(ordersList, v)
-			log.Println("добавили в ordersList: ", v, ordersList)
+			// log.Println("добавили в ordersList: ", v, ordersList)
 		}
 	}()
 
@@ -149,7 +148,7 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 				ordersListCopy := make([]db.OrderStatusNew, len(ordersList))
 				copy(ordersListCopy, ordersList)
 				ordersList = nil
-				log.Println("ordersListCopy: ,будем его сохранять в базе", ordersListCopy)
+				// log.Println("ordersListCopy: ,будем его сохранять в базе", ordersListCopy)
 				mutex.Unlock()
 
 				if _, err := a.storage.WithRetry(ctx, a.storage.PutStatuses(ctx, &ordersListCopy)); err != nil {

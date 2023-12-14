@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -144,6 +145,7 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 
 		balance.Current = (balance.Current - balance.Withdraw) / 1000
 		balance.Withdraw = balance.Withdraw / 1000
+		log.Println("Баланс в querys.go: ", balance)
 		return balance, err
 	}
 }
@@ -170,18 +172,16 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		balance.Current = (balance.Current - balance.Withdraw) / 1000
 		balance.Withdraw = balance.Withdraw / 1000
 
-		fmt.Println("++++balance", balance)
 		if balance.Current-balance.Withdraw < orderSum.Sum {
 			return nil, ErrNotEnoughFunds
 		}
 
-		// ======
 		getOrderQuery := `SELECT number, user_id FROM orders
 						  WHERE orders.number = $1`
 
 		var orderUserID OrderUserID
 		err = tx.QueryRowContext(ctx, getOrderQuery, orderSum.OrderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
-		fmt.Println("errrrrr", err, orderUserID)
+
 		switch {
 		case err == sql.ErrNoRows:
 			t := time.Now()
@@ -194,18 +194,16 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 			return OrderUserID{}, fmt.Errorf("ошибка при получении ордера: %w", err)
 		default:
 			if orderUserID.UserID != userID {
-				fmt.Println("USERS", orderUserID.UserID, userID)
+
 				return OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
 			}
 		}
-
-		//======
 
 		addOrderQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 		VALUES ($1, 'WITHDRAWN', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 	`
 		_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, orderSum.Sum*1000)
-
+		log.Println("Добавляем строку с woithdraw: ", orderSum.OrderNumber, orderSum.Sum*1000)
 		return nil, err
 	}
 }

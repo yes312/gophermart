@@ -24,7 +24,7 @@ func init() {
 	flag.StringVar(&f.A, "a", "localhost:8081", "IP adress")
 	// flag.StringVar(&f.D, "d", "postgresql://postgres:12345@localhost/gmtest?sslmode=disable", "database uri")
 	flag.StringVar(&f.R, "r", "http://127.0.0.1:8080", "ACCRUAL_SYSTEM_ADDRESS")
-	flag.StringVar(&f.D, "d", "postgresql://postgres:12345@localhost/praktikum?sslmode=disable", "database uri")
+	flag.StringVar(&f.D, "d", "postgresql://postgres:12345@localhost/gmtest?sslmode=disable", "database uri")
 }
 
 func main() {
