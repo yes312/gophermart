@@ -6,7 +6,6 @@ import (
 	"errors"
 	db "gophermart/internal/database"
 	"gophermart/utils"
-	"log"
 	"net/http"
 )
 
@@ -20,14 +19,13 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	balanceInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetBalance(h.ctx, userID))
+	balance, ok := balanceInterface.(db.Balance)
 
-	if err != nil {
+	if err != nil || !ok {
 		h.logger.Errorf("ошибка при получении баланса: %w", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	balance, _ := balanceInterface.(db.Balance)
 
 	//  #ВОПРОСМЕНТОРУ может выделить маршалинг и отправку в JSON в отдельную функцию?
 	encoder := json.NewEncoder(w)
@@ -75,7 +73,6 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unprocessable Entity", http.StatusUnprocessableEntity)
 		return
 	}
-	log.Println("WithdrawBalanceDATA", userID, data)
 
 	_, err = h.storage.WithRetry(h.ctx, h.storage.WithdrawBalance(h.ctx, userID, data))
 	switch {

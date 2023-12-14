@@ -144,7 +144,7 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 			return Balance{}, err
 		}
 
-		balance.Current = balance.Current / 100
+		balance.Current = (balance.Current - balance.Withdraw) / 100
 		balance.Withdraw = balance.Withdraw / 100
 		return balance, err
 	}
@@ -169,7 +169,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		if err != nil {
 			return nil, err
 		}
-		balance.Current = balance.Current / 100
+		balance.Current = (balance.Current - balance.Withdraw) / 100
 		balance.Withdraw = balance.Withdraw / 100
 
 		fmt.Println("++++balance", balance)

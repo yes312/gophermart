@@ -94,13 +94,13 @@ func (s *Server) ConfigureMux() *chi.Mux {
 		r.Post("/api/user/register", handler.Registration)
 		r.Post("/api/user/login", handler.Login)
 
-		r.Post("/api/user/orders", handler.AuthMiddleware(handler.UploadOrders))
-		r.Get("/api/user/orders", handler.AuthMiddleware(handler.GetUploadedOrders))
+		r.Post("/api/user/orders", handler.AuthMiddleware(handler.UploadOrders))     //загрузка пользователем номера заказа для расчёта;
+		r.Get("/api/user/orders", handler.AuthMiddleware(handler.GetUploadedOrders)) //получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
 
-		r.Get("/api/user/balance", handler.AuthMiddleware(handler.GetBalance))
-		r.Post("/api/user/balance/withdraw", handler.AuthMiddleware(handler.WithdrawBalance))
+		r.Get("/api/user/balance", handler.AuthMiddleware(handler.GetBalance))                //получение текущего баланса счёта баллов лояльности пользователя
+		r.Post("/api/user/balance/withdraw", handler.AuthMiddleware(handler.WithdrawBalance)) //Запрос на списание средств
 
-		r.Get("/api/user/withdrawals", handler.AuthMiddleware(handler.GetWithdrawals))
+		r.Get("/api/user/withdrawals", handler.AuthMiddleware(handler.GetWithdrawals)) //Получение информации о выводе средств
 
 	})
 

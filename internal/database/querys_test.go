@@ -176,7 +176,7 @@ func (ts *tSuite) TestPutStatuses() {
 	ctx := context.Background()
 	ts.TruncateAllTables(ctx)
 
-	// подготавливаем данные для теста
+	// подготавливаем данные для теста(создаем пользователя и заказ)
 	expectedUser := User{Login: "Jhon", Hash: "123"}
 	_, err := ts.storage.WithRetry(ctx, ts.storage.AddUser(ctx, expectedUser.Login, expectedUser.Hash))
 	ts.NoError(err)
@@ -184,7 +184,7 @@ func (ts *tSuite) TestPutStatuses() {
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
 
-	// тест
+	// тест(добавляем статус PROCESSED)
 	testStatuses := []OrderStatusNew{
 		{Number: "112233", Status: "PROCESSED", Accrual: 729.98, UploadedAt: time.Now()},
 	}
@@ -198,7 +198,15 @@ func (ts *tSuite) TestPutStatuses() {
 	ts.Equal(testStatuses[0].Number, orders[0].Number)
 	ts.Equal(testStatuses[0].Accrual, orders[0].Accrual)
 
-	// чтоб не дублировать код на основе тестов что выше тестируем WithdrawBalance
+	// GetBalance получаем баланс до списания
+	balanceInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetBalance(ctx, orderUserID.UserID))
+	balance, ok := balanceInterface.(Balance)
+	ts.True(ok)
+	fmt.Println("баланс до списания", balance)
+	ts.Equal(balance.Current, 729.98)
+	ts.Equal(balance.Withdraw, 0.0)
+
+	// тестируем WithdrawBalance(добавляем ордер и списывавем на него 100.33)
 	orderUserID = OrderUserID{OrderNumber: "100", UserID: "Jhon"}
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
@@ -209,11 +217,19 @@ func (ts *tSuite) TestPutStatuses() {
 	_, err = ts.storage.WithRetry(ctx, ts.storage.WithdrawBalance(ctx, expectedUser.Login, orderSum))
 	ts.NoError(err)
 
+	// GetBalance получаем баланс после писания
+	balanceInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetBalance(ctx, orderUserID.UserID))
+	balance, ok = balanceInterface.(Balance)
+	ts.True(ok)
+	fmt.Println("баланс после списания", balance)
+	ts.Equal(balance.Current, 729.98)
+	ts.Equal(balance.Withdraw, 100.33)
+
 	// тут же тестируем и GetWithdrawals
 	withdrawalsInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetWithdrawals(ctx, orderUserID.UserID))
 	withdrawals, ok := withdrawalsInterface.([]Withdrawal)
 	ts.True(ok)
-	fmt.Println(withdrawals)
+	fmt.Println("withdrawals", withdrawals)
 
 }
 
