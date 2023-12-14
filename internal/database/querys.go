@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -59,7 +58,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 
 		var orderUserID OrderUserID
 		err := tx.QueryRowContext(ctx, getOrderQuery, orderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
-		log.Println("ERROR!!!", err)
+
 		switch {
 		case err == sql.ErrNoRows:
 			t := time.Now()
@@ -72,7 +71,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 			addBillingQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
 								VALUES ($1, 'NEW', 0, $2, CURRENT_TIMESTAMP)`
 			_, err = tx.ExecContext(ctx, addBillingQuery, orderNumber, t)
-			log.Println("ERROR!!!222 ", err)
+
 			if err != nil {
 				return OrderUserID{}, err
 			}
@@ -96,10 +95,9 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 				 AND billing.time = (
 				 SELECT MAX(time)
 				 FROM billing
-				 WHERE billing.order_number = orders.number
-				 AND billing.status != 'WITHDRAWN')
+				 WHERE billing.order_number = orders.number)			
 				 ORDER BY billing.time ASC,orders.uploaded_at ASC`
-
+		// 	 AND billing.status != 'WITHDRAWN') убраьть ) после  orders.number)	если буду вставлять
 		rows, err := tx.QueryContext(ctx, query, userID)
 		if err != nil {
 			return nil, err
@@ -310,7 +308,7 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 		_, err := tx.ExecContext(ctx, query, t)
 
 		// В целях отладки
-		fmt.Println("В целях отладки", query)
+		// fmt.Println("В целях отладки", query)
 
 		return OrderUserID{}, err
 	}
