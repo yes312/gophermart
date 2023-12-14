@@ -17,8 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const dbName = "gm"
-
 type Server struct {
 	ctx     context.Context
 	server  *http.Server
