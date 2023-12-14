@@ -6,6 +6,7 @@ import (
 	"errors"
 	db "gophermart/internal/database"
 	"gophermart/utils"
+	"log"
 	"net/http"
 )
 
@@ -26,7 +27,7 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	log.Println("ПОЛУЧАЕм БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ: ", balance, userID)
 	//  #ВОПРОСМЕНТОРУ может выделить маршалинг и отправку в JSON в отдельную функцию?
 	encoder := json.NewEncoder(w)
 	err = encoder.Encode(balance)
