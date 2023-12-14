@@ -222,7 +222,7 @@ func (ts *tSuite) TestPutStatuses() {
 	balance, ok = balanceInterface.(Balance)
 	ts.True(ok)
 	fmt.Println("баланс после списания", balance)
-	ts.Equal(balance.Current, 729.98)
+	ts.Equal(balance.Current, 629.65)
 	ts.Equal(balance.Withdraw, 100.33)
 
 	// тут же тестируем и GetWithdrawals
