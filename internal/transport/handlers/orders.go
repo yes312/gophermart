@@ -121,9 +121,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "wrong user id", http.StatusUnauthorized)
 		return
 	}
-	//++++++++++++======================
-	time.Sleep(100 * time.Microsecond)
-	//++++++++++++++++++++++++++++++++
+
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
 	orders, ok := ordersInterface.([]db.OrderStatusNew)
@@ -147,8 +145,20 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
+
+		var ordForWrite []db.OrderStatus
+
+		for _, ord := range orders {
+
+			ordForWrite = append(ordForWrite, db.OrderStatus{
+				Number:     ord.Number,
+				Status:     ord.Status,
+				UploadedAt: ord.UploadedAt,
+				Accrual:    ord.Accrual,
+			})
+		}
 		encoder := json.NewEncoder(w)
-		err := encoder.Encode(orders)
+		err := encoder.Encode(ordForWrite)
 		log.Println("ВОЗВРАЩАЕМ ЗАГРУЖЕННЫЕ ОРДЕРА", orders)
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
