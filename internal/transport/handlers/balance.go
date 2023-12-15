@@ -29,13 +29,23 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("ПОЛУЧАЕм БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ: ", balance, userID)
 	//  #ВОПРОСМЕНТОРУ может выделить маршалинг и отправку в JSON в отдельную функцию?
-	encoder := json.NewEncoder(w)
-	err = encoder.Encode(balance)
+
+	// encoder := json.NewEncoder(w)
+	// err = encoder.Encode(balance)
+	// if err != nil {
+	// 	h.logger.Errorf("Ошибка маршалинга: %w", err)
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	jsonData, err := json.MarshalIndent(balance, "", "  ")
 	if err != nil {
-		h.logger.Errorf("Ошибка маршалинга: %w", err)
+		h.logger.Errorf("ошибка маршалинга: %w", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Println("ВОЗВРАЩАЕМ БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ: ", jsonData)
+	w.Write(jsonData)
 
 }
 
