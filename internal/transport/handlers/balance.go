@@ -44,7 +44,7 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("ВОЗВРАЩАЕМ БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ: ", jsonData)
+	log.Println("ВОЗВРАЩАЕМ БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ  в json: ", string(jsonData))
 	w.Write(jsonData)
 
 }
