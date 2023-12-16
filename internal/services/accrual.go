@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	db "gophermart/internal/database"
+	"gophermart/models"
 	"sync"
 	"time"
 
@@ -35,7 +36,7 @@ func NewAccrual(accrualSysremAdress string, accrualRequestInterval int, accuralP
 func (a *accrual) RunAccrualRequester(ctx context.Context, wg *sync.WaitGroup) {
 
 	orders := make(chan string, 1000)
-	ordersFromAccrual := make(chan db.OrderStatusNew, 1000)
+	ordersFromAccrual := make(chan models.OrderStatusNew, 1000)
 
 	wg.Add(1)
 	go a.collectOrders(ctx, orders, wg)
@@ -78,7 +79,7 @@ func (a *accrual) collectOrders(ctx context.Context, orders chan<- string, wg *s
 	}
 }
 
-func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderStatusNew, wg *sync.WaitGroup) {
+func (a *accrual) worker(ctx context.Context, in chan string, out chan models.OrderStatusNew, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	client := resty.New()
@@ -101,7 +102,7 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 			if err != nil {
 				a.logger.Errorf("ошибка при выполнении response: %w", err)
 			} else {
-				var order db.OrderStatusNew
+				var order models.OrderStatusNew
 
 				if resp.StatusCode() != 200 {
 					a.logger.Errorf("wrong status code: %d order: %s", resp.StatusCode(), orderNumber)
@@ -122,11 +123,11 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan db.OrderS
 	}
 }
 
-func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.OrderStatusNew, wg *sync.WaitGroup) {
+func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan models.OrderStatusNew, wg *sync.WaitGroup) {
 
 	defer close(ordersFromAccrual)
 	defer wg.Done()
-	var ordersList []db.OrderStatusNew
+	var ordersList []models.OrderStatusNew
 	go func() {
 		for v := range ordersFromAccrual {
 			ordersList = append(ordersList, v)
@@ -145,7 +146,7 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan db.O
 
 				var mutex sync.Mutex
 				mutex.Lock()
-				ordersListCopy := make([]db.OrderStatusNew, len(ordersList))
+				ordersListCopy := make([]models.OrderStatusNew, len(ordersList))
 				copy(ordersListCopy, ordersList)
 				ordersList = nil
 				// log.Println("ordersListCopy: ,будем его сохранять в базе", ordersListCopy)

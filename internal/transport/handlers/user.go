@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	db "gophermart/internal/database"
 	"gophermart/internal/services"
+	"gophermart/models"
 	"net/http"
 )
 
@@ -17,6 +17,10 @@ func (h *handlersData) Registration(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if data.Login == "" || data.Password == "" {
+		http.Error(w, "Пароль или логин не корректны", http.StatusBadRequest)
 		return
 	}
 
@@ -74,20 +78,22 @@ func (h *handlersData) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if data.Login == "" || data.Password == "" {
+		http.Error(w, "Пароль или логин не корректны", http.StatusBadRequest)
+		return
+	}
 
 	userInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetUser(h.ctx, data.Login))
-
-	// var user db.User
-	user, ok := userInterface.(db.User)
+	user, ok := userInterface.(models.User)
 
 	switch {
-	case errors.Is(err, sql.ErrNoRows) || !ok:
+	case errors.Is(err, sql.ErrNoRows):
 
 		h.logger.Errorf("Пользователя %w не существует", data.Login)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 
-	case err != nil:
+	case err != nil || !ok:
 		h.logger.Errorf("Ошибка при получении пользователя %w", data.Login)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

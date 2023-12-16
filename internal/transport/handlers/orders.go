@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	db "gophermart/internal/database"
+	"gophermart/models"
 	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/utils"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -50,7 +50,6 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ordersNumber := string(body)
-	log.Println("будет добавлен заказ", ordersNumber)
 
 	valid, err := utils.IsValidOrderNumber(ordersNumber)
 	if err != nil {
@@ -71,13 +70,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderUserIDInterface, err := h.storage.WithRetry(h.ctx, h.storage.AddOrder(h.ctx, ordersNumber, userID))
-	orderUserID, _ := orderUserIDInterface.(db.OrderUserID)
-	log.Println("orderUserID", orderUserID)
-
-	// +++++++++++++++++++++++++++
-	billingInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetBilling(h.ctx))
-	bilings, _ := billingInterface.([]db.Billing)
-	log.Println("BILINGS", bilings)
+	orderUserID, _ := orderUserIDInterface.(models.OrderUserID)
 
 	if err != nil {
 
@@ -101,13 +94,7 @@ func (h *handlersData) UploadOrders(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// +++++++++++++++++++++++++++
-	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
-	orders, ok := ordersInterface.([]db.OrderStatusNew)
-	h.logger.Info("ПОЛУЧАЕМ СИПСОК ВСЕХ ЗАГРУЖЕННЫх ОРДЕРОВ ПОЛЬЗОВАТЕЛЯ:", orders, ok, err)
-
-	// +++++++++++++++++++++++++++
 	h.logger.Infof("заказ %s загружен пользователем %s", ordersNumber, userID)
 	setResponseHeaders(w, ApplicationJSON, http.StatusAccepted)
 
@@ -124,16 +111,16 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
-	orders, ok := ordersInterface.([]db.OrderStatusNew)
+	orders, ok := ordersInterface.([]models.OrderStatusNew)
 
 	switch {
-	case errors.Is(err, sql.ErrNoRows) || !ok:
+	case errors.Is(err, sql.ErrNoRows):
 		// если данных нет, то эта лшибка не выпадает. т.к. err=nil
 		h.logger.Info("нет данных о заказах")
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
 
-	case err != nil:
+	case err != nil || !ok:
 		h.logger.Errorf("Ошибка запроса к базе: %w", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -146,11 +133,11 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		}
 		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
 
-		var ordForWrite []db.OrderStatus
+		var ordForWrite []models.OrderStatus
 
 		for _, ord := range orders {
 
-			ordForWrite = append(ordForWrite, db.OrderStatus{
+			ordForWrite = append(ordForWrite, models.OrderStatus{
 				Number:     ord.Number,
 				Status:     ord.Status,
 				UploadedAt: ord.UploadedAt,
@@ -159,7 +146,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		}
 		encoder := json.NewEncoder(w)
 		err := encoder.Encode(ordForWrite)
-		log.Println("ВОЗВРАЩАЕМ ЗАГРУЖЕННЫЕ ОРДЕРА", orders)
+
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

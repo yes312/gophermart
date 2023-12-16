@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	db "gophermart/internal/database"
+	"gophermart/models"
 	"gophermart/utils"
 	"log"
 	"net/http"
@@ -20,7 +21,7 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	balanceInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetBalance(h.ctx, userID))
-	balance, ok := balanceInterface.(db.Balance)
+	balance, ok := balanceInterface.(models.Balance)
 
 	if err != nil || !ok {
 		h.logger.Errorf("ошибка при получении баланса: %w", err)
@@ -65,7 +66,7 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data db.OrderSum
+	var data models.OrderSum
 
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -118,7 +119,7 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	withdrawalsInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetWithdrawals(h.ctx, userID))
-	withdrawals, ok := withdrawalsInterface.([]db.Withdrawal)
+	withdrawals, ok := withdrawalsInterface.([]models.Withdrawal)
 
 	switch {
 	case errors.Is(err, sql.ErrNoRows) || !ok:

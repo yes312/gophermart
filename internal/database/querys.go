@@ -4,17 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"gophermart/models"
 	"log"
 	"strings"
 	"time"
 )
 
-func (storage *Storage) GetUser(ctx context.Context, login string) dbOperation {
+func (storage *Storage) GetUser(ctx context.Context, login string) DBOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		getUserQuery := `SELECT user_id, hash from users WHERE user_id=$1;`
-		var user User
+		var user models.User
 		err := tx.QueryRowContext(ctx, getUserQuery, login).Scan(&user.Login, &user.Hash)
 
 		return user, err
@@ -22,7 +23,7 @@ func (storage *Storage) GetUser(ctx context.Context, login string) dbOperation {
 
 }
 
-func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) dbOperation {
+func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) DBOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		addUserQuery := `INSERT INTO users(user_id, hash) VALUES ($1, $2)`
@@ -32,7 +33,7 @@ func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) dbOper
 	}
 }
 
-// func (storage *Storage) GetOrder(ctx context.Context, order string) dbOperation {
+// func (storage *Storage) GetOrder(ctx context.Context, order string) DBOperation {
 // 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 // 		getOrderQuery := `
 // 		SELECT orders.number, users.user_id
@@ -50,14 +51,14 @@ func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) dbOper
 // 	}
 // }
 
-func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID string) dbOperation {
+func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID string) DBOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		getOrderQuery := `SELECT number, user_id FROM orders
 						  WHERE orders.number = $1`
 
-		var orderUserID OrderUserID
+		var orderUserID models.OrderUserID
 		err := tx.QueryRowContext(ctx, getOrderQuery, orderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
 
 		switch {
@@ -66,7 +67,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 			addOrderQuery := `INSERT INTO orders(number, user_id, uploaded_at) VALUES ($1, $2, $3)`
 			_, err = tx.ExecContext(ctx, addOrderQuery, orderNumber, userID, t)
 			if err != nil {
-				return OrderUserID{}, err
+				return models.OrderUserID{}, err
 			}
 
 			addBillingQuery := `INSERT INTO billing (order_number, status, accrual, uploaded_at, time)
@@ -74,18 +75,18 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 			_, err = tx.ExecContext(ctx, addBillingQuery, orderNumber, t)
 
 			if err != nil {
-				return OrderUserID{}, err
+				return models.OrderUserID{}, err
 			}
 
 		case err != nil:
-			return OrderUserID{}, err
+			return models.OrderUserID{}, err
 		}
 
 		return orderUserID, err
 	}
 }
 
-func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperation {
+func (storage *Storage) GetOrders(ctx context.Context, userID string) DBOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -105,9 +106,9 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 		}
 		defer rows.Close()
 
-		var orderStatusList []OrderStatusNew
+		var orderStatusList []models.OrderStatus
 		for rows.Next() {
-			var ordS OrderStatusNew
+			var ordS models.OrderStatus
 			err := rows.Scan(&ordS.Number, &ordS.Status, &ordS.Accrual, &ordS.UploadedAt)
 			if err != nil {
 				return nil, err
@@ -124,7 +125,7 @@ func (storage *Storage) GetOrders(ctx context.Context, userID string) dbOperatio
 	}
 }
 
-func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperation {
+func (storage *Storage) GetBalance(ctx context.Context, userID string) DBOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		getBalanceQuery := `	
@@ -135,12 +136,12 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
 
-		var balance Balance
+		var balance models.Balance
 
 		err := tx.QueryRowContext(ctx, getBalanceQuery, userID).Scan(&balance.Current, &balance.Withdraw)
 
 		if err != nil {
-			return Balance{}, err
+			return models.Balance{}, err
 		}
 
 		balance.Current = (balance.Current - balance.Withdraw) / 1000
@@ -150,7 +151,7 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) dbOperati
 	}
 }
 
-func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orderSum OrderSum) dbOperation {
+func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orderSum models.OrderSum) DBOperation {
 
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
@@ -162,7 +163,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		JOIN billing ON orders.number = billing.order_number
 		WHERE orders.user_id =$1  AND billing.status IN ('PROCESSED', 'WITHDRAWN');`
 
-		var balance Balance
+		var balance models.Balance
 
 		err := tx.QueryRowContext(ctx, getBalanceQuery, userID).Scan(&balance.Current, &balance.Withdraw)
 
@@ -179,7 +180,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		getOrderQuery := `SELECT number, user_id FROM orders
 						  WHERE orders.number = $1`
 
-		var orderUserID OrderUserID
+		var orderUserID models.OrderUserID
 		err = tx.QueryRowContext(ctx, getOrderQuery, orderSum.OrderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
 
 		switch {
@@ -188,14 +189,14 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 			addOrderQuery := `INSERT INTO orders(number, user_id, uploaded_at) VALUES ($1, $2, $3)`
 			_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, userID, t)
 			if err != nil {
-				return OrderUserID{}, err
+				return models.OrderUserID{}, err
 			}
 		case err != nil:
-			return OrderUserID{}, fmt.Errorf("ошибка при получении ордера: %w", err)
+			return models.OrderUserID{}, fmt.Errorf("ошибка при получении ордера: %w", err)
 		default:
 			if orderUserID.UserID != userID {
 
-				return OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
+				return models.OrderUserID{}, fmt.Errorf("нельзя вывести деньги другому пользователю %s", orderUserID.UserID)
 			}
 		}
 
@@ -208,7 +209,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 	}
 }
 
-func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOperation {
+func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) DBOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		queryWithdrawals := `SELECT orders.number, billing.accrual AS sum, billing.uploaded_at AS processed_at
@@ -224,9 +225,9 @@ func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOpe
 		}
 		defer rows.Close()
 
-		var withdrawalsList []Withdrawal
+		var withdrawalsList []models.Withdrawal
 		for rows.Next() {
-			var w Withdrawal
+			var w models.Withdrawal
 			err := rows.Scan(&w.OrderNumber, &w.Sum, &w.ProcessedAt)
 			if err != nil {
 				return nil, err
@@ -241,7 +242,7 @@ func (storage *Storage) GetWithdrawals(ctx context.Context, userID string) dbOpe
 	}
 }
 
-func (storage *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
+func (storage *Storage) GetNewProcessedOrders(ctx context.Context) DBOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 		query := `
 		SELECT b.order_number
@@ -281,7 +282,7 @@ func (storage *Storage) GetNewProcessedOrders(ctx context.Context) dbOperation {
 	}
 }
 
-func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderStatusNew) dbOperation {
+func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]models.OrderStatusNew) DBOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 
 		t := time.Now()
@@ -308,12 +309,12 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]OrderSta
 		// В целях отладки
 		// fmt.Println("В целях отладки", query)
 
-		return OrderUserID{}, err
+		return models.OrderUserID{}, err
 	}
 }
 
 // этот метод написан для тестирования
-func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
+func (storage *Storage) GetBilling(ctx context.Context) DBOperation {
 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
 		query := `SELECT order_number, status, accrual AS accrual, uploaded_at, time FROM billing;`
 		rows, err := tx.QueryContext(ctx, query)
@@ -321,9 +322,9 @@ func (storage *Storage) GetBilling(ctx context.Context) dbOperation {
 			return nil, err
 		}
 		defer rows.Close()
-		var billingList []Billing
+		var billingList []models.Billing
 		for rows.Next() {
-			var b Billing
+			var b models.Billing
 			err := rows.Scan(&b.OrderNumber, &b.Status, &b.Accrual, &b.UploadedAt, &b.Time)
 			if err != nil {
 				return nil, err

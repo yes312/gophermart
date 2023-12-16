@@ -1,9 +1,6 @@
-package db
+package models
 
-import (
-	"errors"
-	"time"
-)
+import "time"
 
 type User struct {
 	Login string
@@ -52,5 +49,3 @@ type Billing struct {
 	UploadedAt  time.Time `json:"uploaded_at"`
 	Time        time.Time `json:"time"`
 }
-
-var ErrNotEnoughFunds = errors.New("not enough funds on balance")

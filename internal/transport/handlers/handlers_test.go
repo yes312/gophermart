@@ -1,127 +1,475 @@
 package transport
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"database/sql"
-// 	db "gophermart/internal/database"
-// 	"gophermart/internal/mocks"
-// 	"gophermart/internal/services"
-// 	"gophermart/pkg/logger"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+import (
+	"context"
+	"database/sql"
+	"errors"
+	db "gophermart/internal/database"
+	"gophermart/internal/mocks"
+	"gophermart/models"
+	jwtpackage "gophermart/pkg/jwt"
+	"gophermart/pkg/logger"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 
-// 	"github.com/go-resty/resty/v2"
-// 	"github.com/golang/mock/gomock"
-// 	"github.com/stretchr/testify/suite"
-// )
+	"github.com/go-resty/resty/v2"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
+)
 
-// type HandlerTestSuite struct {
-// 	suite.Suite
-// 	client *resty.Client
-// 	server *httptest.Server
-// }
+type HandlerTestSuite struct {
+	suite.Suite
+	client *resty.Client
+	server *httptest.Server
+}
 
-// func (suite *HandlerTestSuite) SetupSuite() {
-// 	suite.client = resty.New()
-// }
+func (suite *HandlerTestSuite) SetupSuite() {
+	suite.client = resty.New()
+}
 
-// func TestSuiteTestJSONHandler(t *testing.T) {
-// 	suite.Run(t, &HandlerTestSuite{})
-// }
+func TestSuiteTestJSONHandler(t *testing.T) {
+	suite.Run(t, &HandlerTestSuite{})
+}
 
-// func (suite *HandlerTestSuite) TearDownSuite() {
-// 	suite.server.Close()
-// }
+func (suite *HandlerTestSuite) TearDownSuite() {
+	suite.server.Close()
+}
 
-// // строка для создания файла с моками
-// // mockgen -destination="internal/mocks/mock_store.go" -package=mocks "gophermart/internal/database" StoragerDB
-// func (suite *HandlerTestSuite) TestGetUsers() {
+// строка для создания файла с моками
+// mockgen -destination="internal/mocks/mock_store.go" -package=mocks "gophermart/internal/database" StoragerDB
+func (suite *HandlerTestSuite) TestGetUsers() {
 
-// 	ctrl := gomock.NewController(suite.T())
-// 	defer ctrl.Finish()
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
 
-// 	ctx := context.Background()
-// 	m := mocks.NewMockStoragerDB(ctrl)
-// 	logger, err := logger.NewLogger("Info")
-// 	suite.NoError(err)
-// 	h := New(ctx, m, logger)
-// 	suite.server = httptest.NewServer(http.HandlerFunc(h.Registration))
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	suite.server = httptest.NewServer(http.HandlerFunc(h.Registration))
 
-// 	body := services.UserAuthInfo{Login: "User1", Password: "123"}
+	type authUserData struct {
+		Login    string `json:"login"`
+		Password string `json:"password"`
+	}
+	type badAuthUserData struct {
+		Login     string `json:"loging"`
+		BadString string `json:"badstring"`
+	}
 
-// 	// expUser := db.User{uid: "string",
-// 	// 	login: "user1",
-// 	// 	hash:  "234"}
+	type testCase struct {
+		name               string
+		login              string
+		body               interface{}
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+	}
 
-// 	u := db.User{Uid: "1324", Login: "User1", Hash: "111"}
+	tests := []testCase{
+		{
+			name:  "Логин занят",
+			login: "Jhon",
+			body: authUserData{
+				Login:    "Jhon",
+				Password: "12345",
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 409,
+			useMock:            true,
+		},
+		{
+			name:  "Ошибка при добавлении пользователя",
+			login: "Jhon",
+			body: authUserData{
+				Login:    "Jhon",
+				Password: "12345",
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка при добавлении пользователя"),
+			expectedStatusCode: 500,
+			useMock:            true,
+		},
+		{
+			name:  "400 — неверный формат запроса;",
+			login: "Jhon",
+			body: badAuthUserData{
+				Login:     "Jhon",
+				BadString: "12345",
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка при добавлении пользователя"),
+			expectedStatusCode: 400,
+			useMock:            false,
+		},
+	}
+	url := "/api/user/register"
+	for _, test := range tests {
 
-// 	m.EXPECT().GetUser(ctx, body).Return(u, nil)
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().GetUser(h.ctx, test.login).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
 
-// 	url := "/api/user/register"
+		resp, err := suite.client.R().
+			SetBody(test.body).
+			SetHeader("Content-Type", "application/json").
+			Post(suite.server.URL + url)
 
-// 	resp, err := suite.client.R().
-// 		SetBody(body).
-// 		Post(suite.server.URL + url)
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+	}
 
-// 	suite.NoError(err)
-// 	suite.Equal(200, resp.StatusCode())
-// 	// v, err := strconv.Atoi(string(resp.Body()))
-// 	suite.NoError(err)
-// 	// suite.Equal(, v)
+	test := testCase{
+		name:  "успех",
+		login: "Jhon",
+		body: authUserData{
+			Login:    "Jhon",
+			Password: "12345",
+		},
+		ReturnInterface:    nil,
+		ReturnErr:          sql.ErrNoRows,
+		expectedStatusCode: 200,
+		useMock:            true,
+	}
 
-// }
+	if test.useMock {
+		var mockedDBOperation db.DBOperation
+		m.EXPECT().GetUser(h.ctx, test.login).Return(mockedDBOperation)
+		m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		hash := "b13f28188ed29c08e6b0a220822e76c2c557a69c480f91924e1a8084004d4c55"
+		m.EXPECT().AddUser(h.ctx, test.login, hash).Return(mockedDBOperation)
+		m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, nil)
 
-// func TestRegistration(t *testing.T) {
-// 	// Test case 1: Successful registration
-// 	t.Run("Successful registration", func(t *testing.T) {
-// 		// Create a new handlersData instance
+	}
 
-// 		ctrl := gomock.NewController(t)
-// 		defer ctrl.Finish()
+	resp, err := suite.client.R().
+		SetBody(test.body).
+		SetHeader("Content-Type", "application/json").
+		Post(suite.server.URL + url)
 
-// 		m := mocks.NewMockStoragerDB(ctrl)
-// 		logger, _ := logger.NewLogger("Info")
-// 		// suite.NoError(err)
-// 		h := &handlersData{
-// 			storage: m,
-// 			logger:  logger,
-// 		}
+	suite.NoError(err)
+	suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+	suite.Equal("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI2NzI5ODYsIlVzZXJJRCI6Ikpob24ifQ.eNyPRFCYvNftB1tsVWfc2jFjUpyiRgzDDnyNeufCyGY"[:30],
+		resp.Header().Get("Authorization")[:30])
+}
 
-// 		u := db.User{Uid: "1324", Login: "john", Hash: "6b12e30ad2d20c42d3e38e120191224f0852467e6441aa48ef05834d12810c06"}
-// 		ctx := context.Background()
-// 		body := services.UserAuthInfo{Login: "john", Password: "password123"}
+func (suite *HandlerTestSuite) TestLogin() {
 
-// 		m.EXPECT().GetUser(ctx, body.Login).Return(u, sql.ErrNoRows)
-// 		m.EXPECT().AddUser(ctx, u.Login, u.Hash).Return(nil)
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
 
-// 		// Create a new HTTP request with the registration data
-// 		payload := []byte(`{"login": "john", "password": "password123"}`)
-// 		req, err := http.NewRequest("POST", "/registration", bytes.NewBuffer(payload))
-// 		if err != nil {
-// 			t.Fatal(err)
-// 		}
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
+	suite.server = httptest.NewServer(http.HandlerFunc(h.Login))
+	// 200 — пользователь успешно аутентифицирован;
+	// 400 — неверный формат запроса;
+	// 401 — неверная пара логин/пароль;
+	// 500 — внутренняя ошибка сервера.
 
-// 		// Create a new HTTP response recorder
-// 		rr := httptest.NewRecorder()
+	type authUserData struct {
+		Login    string `json:"login"`
+		Password string `json:"password"`
+	}
+	type badAuthUserData struct {
+		Login     string `json:"loging"`
+		BadString string `json:"badstring"`
+	}
 
-// 		// Call the Registration function
-// 		h.Registration(rr, req)
+	type testCase struct {
+		name               string
+		login              string
+		body               interface{}
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+	}
 
-// 		// Check the HTTP status code
-// 		if rr.Code != http.StatusOK {
-// 			t.Errorf("Expected status code %d, got %d", http.StatusOK, rr.Code)
-// 		}
+	tests := []testCase{
+		{
+			name:  "неверный логин -пароль(401)",
+			login: "Jhon",
+			body: authUserData{
+				Login:    "Jhon",
+				Password: "12345",
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          sql.ErrNoRows,
+			expectedStatusCode: 401,
+			useMock:            true,
+		},
+		{
+			name:  "Ошибка 500",
+			login: "Jhon",
+			body: authUserData{
+				Login:    "Jhon",
+				Password: "12345",
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка при полученнии пользователя"),
+			expectedStatusCode: 500,
+			useMock:            true,
+		},
+		{
+			name:  "400 — неверный формат запроса;",
+			login: "Jhon",
+			body: badAuthUserData{
+				Login:     "Jhon",
+				BadString: "",
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка при добавлении пользователя"),
+			expectedStatusCode: 400,
+			useMock:            false,
+		},
+		{
+			name:  "200 — пользователь успешно аутентифицирован;",
+			login: "Jhon",
+			body: authUserData{
+				Login:    "Jhon",
+				Password: "12345",
+			},
+			ReturnInterface: models.User{
+				Login: "Jhon",
+				Hash:  "b13f28188ed29c08e6b0a220822e76c2c557a69c480f91924e1a8084004d4c55",
+			},
+			ReturnErr:          nil,
+			expectedStatusCode: 200,
+			useMock:            true,
+		},
+	}
 
-// 		// Check the response headers
-// 		expectedHeaders := map[string]string{
-// 			"Content-Type": "application/json",
-// 		}
-// 		for key, value := range expectedHeaders {
-// 			if rr.Header().Get(key) != value {
-// 				t.Errorf("Expected header %s: %s, got %s", key, value, rr.Header().Get(key))
-// 			}
-// 		}
-// 	})
-// }
+	url := "/api/user/login"
+	for _, test := range tests {
+
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().GetUser(h.ctx, test.login).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
+
+		resp, err := suite.client.R().
+			SetBody(test.body).
+			SetHeader("Content-Type", "application/json").
+			SetHeader("authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI2NzI5ODYsIlVzZXJJRCI6Ikpob24ifQ.eNyPRFCYvNftB1tsVWfc2jFjUpyiRgzDDnyNeufCyGY").
+			Post(suite.server.URL + url)
+
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+	}
+
+}
+
+func (suite *HandlerTestSuite) TestUploadOrder() {
+
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
+	suite.server = httptest.NewServer(h.AuthMiddleware(h.UploadOrders))
+
+	// + 200 — номер заказа уже был загружен этим пользователем;
+	// + 202 — новый номер заказа принят в обработку;
+	// + 400 — неверный формат запроса;
+	// + 401 — пользователь не аутентифицирован;
+	// 409 — номер заказа уже был загружен другим пользователем;
+	// + 422 — неверный формат номера заказа;
+	// + 500 — внутренняя ошибка сервера.
+
+	type testCase struct {
+		name               string
+		orderNumber        string
+		userID             string
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+		token              string
+	}
+	validToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUjhVY"
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUj000"
+	tests := []testCase{
+		{
+			name:               "невалидный номер заказа",
+			orderNumber:        "123",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка"),
+			expectedStatusCode: 422,
+			useMock:            false,
+			token:              validToken,
+		},
+		{
+			name:               "неверный номер заказа 2",
+			orderNumber:        "12w3",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка"),
+			expectedStatusCode: 400,
+			useMock:            false,
+			token:              validToken,
+		},
+		{
+			name:               "500",
+			orderNumber:        "4539148803436467",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка 500"),
+			expectedStatusCode: 500,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:               "401 — пользователь не аутентифицирован",
+			orderNumber:        "4539148803436467",
+			userID:             "JhonJhon",
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 401,
+			useMock:            false,
+			token:              invalidToken,
+		},
+		{
+			name:               "202 — новый номер заказа принят в обработку;",
+			orderNumber:        "4539148803436467",
+			userID:             "Jhon",
+			ReturnInterface:    models.OrderUserID{},
+			ReturnErr:          nil,
+			expectedStatusCode: 202,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:        "200 — номер заказа уже был загружен этим пользователем;",
+			orderNumber: "4539148803436467",
+			userID:      "Jhon",
+			ReturnInterface: models.OrderUserID{
+				OrderNumber: "4539148803436467",
+				UserID:      "Jhon",
+			},
+			ReturnErr:          nil,
+			expectedStatusCode: 200,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:        "409 — номер заказа уже был загружен другим пользователем",
+			orderNumber: "4539148803436467",
+			userID:      "Jhon",
+			ReturnInterface: models.OrderUserID{
+				OrderNumber: "4539148803436467",
+				UserID:      "JhonJhon",
+			},
+			ReturnErr:          nil,
+			expectedStatusCode: 409,
+			useMock:            true,
+			token:              validToken,
+		},
+	}
+
+	url := "/api/user/orders"
+	for _, test := range tests {
+
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().AddOrder(h.ctx, test.orderNumber, test.userID).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
+
+		resp, err := suite.client.R().
+			SetBody(test.orderNumber).
+			SetHeader("authorization", test.token).
+			SetHeader("Content-Type", "application/json").
+			Post(suite.server.URL + url)
+
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+	}
+
+}
+
+func (suite *HandlerTestSuite) TestGetOrders() {
+
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
+	suite.server = httptest.NewServer(h.AuthMiddleware(h.GetUploadedOrders))
+
+	// 200 — успешная обработка запроса.
+	// 204 — нет данных для ответа.
+	// + 401 — пользователь не авторизован.
+	// 500 — внутренняя ошибка сервера.
+
+	type testCase struct {
+		name               string
+		userID             string
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+		token              string
+	}
+	validToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUjhVY"
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUj000"
+
+	tests := []testCase{{
+		name:               "401 — пользователь не аутентифицирован",
+		userID:             "JhonJhon",
+		ReturnInterface:    nil,
+		ReturnErr:          nil,
+		expectedStatusCode: 401,
+		useMock:            false,
+		token:              invalidToken,
+	},
+		{
+			name:               "500",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка 500"),
+			expectedStatusCode: 500,
+			useMock:            true,
+			token:              validToken,
+		},
+	}
+
+	url := "/api/user/orders"
+	for _, test := range tests {
+
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().GetOrders(h.ctx, test.userID).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
+
+		resp, err := suite.client.R().
+			SetHeader("authorization", test.token).
+			SetHeader("Content-Type", "application/json").
+			Get(suite.server.URL + url)
+
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+
+	}
+}

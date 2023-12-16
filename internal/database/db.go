@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"gophermart/models"
 	"gophermart/pkg/logger"
 	"gophermart/utils"
 	"log"
@@ -20,24 +21,24 @@ import (
 	"go.uber.org/zap"
 )
 
+var ErrNotEnoughFunds = errors.New("not enough funds on balance")
+
 var _ StoragerDB = &Storage{}
 
-type dbOperation func(context.Context, *sql.Tx) (interface{}, error)
+type DBOperation func(context.Context, *sql.Tx) (interface{}, error)
 
 type StoragerDB interface {
 	Close() error
-	GetUser(context.Context, string) dbOperation
-	AddUser(context.Context, string, string) dbOperation
-	// GetOrder(context.Context, string) dbOperation
-	AddOrder(context.Context, string, string) dbOperation
-	GetOrders(context.Context, string) dbOperation
-	GetBalance(context.Context, string) dbOperation
-	WithdrawBalance(context.Context, string, OrderSum) dbOperation
-	WithRetry(context.Context, dbOperation) (interface{}, error)
-	GetWithdrawals(context.Context, string) dbOperation
-	GetNewProcessedOrders(context.Context) dbOperation
-	PutStatuses(context.Context, *[]OrderStatusNew) dbOperation
-	GetBilling(context.Context) dbOperation
+	GetUser(context.Context, string) DBOperation
+	AddUser(context.Context, string, string) DBOperation
+	AddOrder(context.Context, string, string) DBOperation
+	GetOrders(context.Context, string) DBOperation
+	GetBalance(context.Context, string) DBOperation
+	WithdrawBalance(context.Context, string, models.OrderSum) DBOperation
+	WithRetry(context.Context, DBOperation) (interface{}, error)
+	GetWithdrawals(context.Context, string) DBOperation
+	GetNewProcessedOrders(context.Context) DBOperation
+	PutStatuses(context.Context, *[]models.OrderStatusNew) DBOperation
 }
 
 type Storage struct {
@@ -126,7 +127,7 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migration
 
 }
 
-func (storage *Storage) WithRetry(ctx context.Context, txFunc dbOperation) (interface{}, error) {
+func (storage *Storage) WithRetry(ctx context.Context, txFunc DBOperation) (interface{}, error) {
 
 	var result interface{}
 	pauseDurations := []int{0, 1, 3, 5}

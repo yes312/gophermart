@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
+	"gophermart/models"
 	"testing"
 	"time"
 
@@ -29,29 +29,29 @@ func (ts *tSuite) TestAddUser() {
 
 	type userTestCase struct {
 		name        string
-		user        User
+		user        models.User
 		expectedErr bool
 	}
 
 	tests := []userTestCase{
 		{
 			name:        "создание пользователя",
-			user:        User{Login: "Jhon", Hash: "123"},
+			user:        models.User{Login: "Jhon", Hash: "123"},
 			expectedErr: false,
 		},
 		{
 			name:        "повторное создание пользователя",
-			user:        User{Login: "Jhon", Hash: "123"},
+			user:        models.User{Login: "Jhon", Hash: "123"},
 			expectedErr: true,
 		},
 		{
 			name:        "пустой хеш",
-			user:        User{Login: "Jhon", Hash: ""},
+			user:        models.User{Login: "Jhon", Hash: ""},
 			expectedErr: true,
 		},
 		{
 			name:        "пустой логин",
-			user:        User{Login: "", Hash: "123"},
+			user:        models.User{Login: "", Hash: "123"},
 			expectedErr: true,
 		},
 	}
@@ -73,7 +73,7 @@ func (ts *tSuite) TestGetUser() {
 	ctx := context.Background()
 	ts.TruncateAllTables(ctx)
 
-	expectedUser := User{
+	expectedUser := models.User{
 		Login: "Jhon",
 		Hash:  "123",
 	}
@@ -86,7 +86,7 @@ func (ts *tSuite) TestGetUser() {
 	userInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetUser(ctx, expectedUser.Login))
 	ts.NoError(err)
 
-	user, ok := userInterface.(User)
+	user, ok := userInterface.(models.User)
 	ts.True(ok)
 	ts.Equal(expectedUser, user)
 
@@ -98,7 +98,7 @@ func (ts *tSuite) TestAddOrder() {
 	ctx := context.Background()
 	ts.TruncateAllTables(ctx)
 
-	expectedUser := User{
+	expectedUser := models.User{
 		Login: "Jhon",
 		Hash:  "123",
 	}
@@ -111,7 +111,7 @@ func (ts *tSuite) TestAddOrder() {
 		userID      string
 		orderNumber string
 		expectedErr bool
-		expected    OrderUserID
+		expected    models.OrderUserID
 	}
 
 	testCases := []testCase{
@@ -120,14 +120,14 @@ func (ts *tSuite) TestAddOrder() {
 			orderNumber: "123",
 			userID:      "Jhon",
 			expectedErr: false,
-			expected:    OrderUserID{},
+			expected:    models.OrderUserID{},
 		},
 		{
 			name:        "добавляем уже существующий заказ",
 			orderNumber: "123",
 			userID:      "Jhon",
 			expectedErr: false,
-			expected: OrderUserID{
+			expected: models.OrderUserID{
 				OrderNumber: "123",
 				UserID:      "Jhon",
 			},
@@ -149,7 +149,7 @@ func (ts *tSuite) TestAddOrder() {
 			orderNumber: "123",
 			userID:      "Pharhad",
 			expectedErr: false,
-			expected: OrderUserID{
+			expected: models.OrderUserID{
 				OrderNumber: "123",
 				UserID:      "Jhon",
 			},
@@ -159,8 +159,8 @@ func (ts *tSuite) TestAddOrder() {
 	for _, tc := range testCases {
 		var isErr bool
 		orderUserIDInterface, err := ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, tc.orderNumber, tc.userID))
-		orderUserID, _ := orderUserIDInterface.(OrderUserID)
-		log.Println("orderUserID", orderUserID)
+		orderUserID, _ := orderUserIDInterface.(models.OrderUserID)
+
 		if err != nil {
 			isErr = true
 		}
@@ -170,22 +170,22 @@ func (ts *tSuite) TestAddOrder() {
 
 }
 
-func (ts *tSuite) TestPutStatuses() {
+func (ts *tSuite) TestCommon() {
 
-	ts.T().Log("Тест TestPutStatuses()")
+	ts.T().Log("Тест TestPutStatusesAndOther()")
 	ctx := context.Background()
 	ts.TruncateAllTables(ctx)
 
 	// подготавливаем данные для теста(создаем пользователя и заказ)
-	expectedUser := User{Login: "Jhon", Hash: "123"}
+	expectedUser := models.User{Login: "Jhon", Hash: "123"}
 	_, err := ts.storage.WithRetry(ctx, ts.storage.AddUser(ctx, expectedUser.Login, expectedUser.Hash))
 	ts.NoError(err)
-	orderUserID := OrderUserID{OrderNumber: "112233", UserID: "Jhon"}
+	orderUserID := models.OrderUserID{OrderNumber: "112233", UserID: "Jhon"}
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
 
 	// тест(добавляем статус PROCESSED)
-	testStatuses := []OrderStatusNew{
+	testStatuses := []models.OrderStatusNew{
 		{Number: "112233", Status: "PROCESSED", Accrual: 729.98, UploadedAt: time.Now()},
 	}
 	_, err = ts.storage.WithRetry(ctx, ts.storage.PutStatuses(ctx, &testStatuses))
@@ -193,24 +193,24 @@ func (ts *tSuite) TestPutStatuses() {
 
 	ordersInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok := ordersInterface.([]OrderStatusNew)
+	orders, ok := ordersInterface.([]models.OrderStatus)
 	ts.True(ok)
 	ts.Equal(testStatuses[0].Number, orders[0].Number)
 	ts.Equal(testStatuses[0].Accrual, orders[0].Accrual)
 
 	// GetBalance получаем баланс до списания
 	balanceInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetBalance(ctx, orderUserID.UserID))
-	balance, ok := balanceInterface.(Balance)
+	balance, ok := balanceInterface.(models.Balance)
 	ts.True(ok)
-	fmt.Println("баланс до списания", balance)
+
 	ts.Equal(balance.Current, 729.98)
 	ts.Equal(balance.Withdraw, 0.0)
 
 	// тестируем WithdrawBalance(добавляем ордер и списывавем на него 100.33)
-	orderUserID = OrderUserID{OrderNumber: "100", UserID: "Jhon"}
+	orderUserID = models.OrderUserID{OrderNumber: "100", UserID: "Jhon"}
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
-	orderSum := OrderSum{
+	orderSum := models.OrderSum{
 		OrderNumber: "100",
 		Sum:         100.33,
 	}
@@ -219,17 +219,18 @@ func (ts *tSuite) TestPutStatuses() {
 
 	// GetBalance получаем баланс после писания
 	balanceInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetBalance(ctx, orderUserID.UserID))
-	balance, ok = balanceInterface.(Balance)
+	balance, ok = balanceInterface.(models.Balance)
 	ts.True(ok)
-	fmt.Println("баланс после списания", balance)
+
 	ts.Equal(balance.Current, 629.65)
 	ts.Equal(balance.Withdraw, 100.33)
 
 	// тут же тестируем и GetWithdrawals
 	withdrawalsInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetWithdrawals(ctx, orderUserID.UserID))
-	withdrawals, ok := withdrawalsInterface.([]Withdrawal)
+	withdrawals, ok := withdrawalsInterface.([]models.Withdrawal)
 	ts.True(ok)
-	fmt.Println("withdrawals", withdrawals)
+	ts.Equal(withdrawals[0].Sum, 100.33)
+	ts.Equal(withdrawals[0].OrderNumber, "100")
 
 }
 
@@ -239,7 +240,7 @@ func (ts *tSuite) TestGetOrders() {
 	ctx := context.Background()
 	ts.TruncateAllTables(ctx)
 
-	expectedUser := User{Login: "Jhon", Hash: "123"}
+	expectedUser := models.User{Login: "Jhon", Hash: "123"}
 
 	_, err := ts.storage.WithRetry(ctx, ts.storage.AddUser(ctx, expectedUser.Login, expectedUser.Hash))
 	ts.NoError(err)
@@ -247,30 +248,30 @@ func (ts *tSuite) TestGetOrders() {
 	// нет данных
 	ordersInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok := ordersInterface.([]OrderStatusNew)
+	orders, ok := ordersInterface.([]models.OrderStatusNew)
 	ts.True(ok)
-	var orderStatusList []OrderStatusNew
+	var orderStatusList []models.OrderStatusNew
 	ts.Equal(orderStatusList, orders, "возврат пустой структуры")
 
 	// добавляем ордер и проверяем
-	orderUserID := OrderUserID{OrderNumber: "112233", UserID: "Jhon"}
+	orderUserID := models.OrderUserID{OrderNumber: "112233", UserID: "Jhon"}
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
 	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok = ordersInterface.([]OrderStatusNew)
+	orders, ok = ordersInterface.([]models.OrderStatusNew)
 	ts.True(ok)
 	ts.Equal("112233", orders[0].Number)
 	ts.Equal("NEW", orders[0].Status)
 
 	time.Sleep(time.Second)
 	// добавляем еще ордер ордер и проверяем
-	orderUserID = OrderUserID{OrderNumber: "1177", UserID: "Jhon"}
+	orderUserID = models.OrderUserID{OrderNumber: "1177", UserID: "Jhon"}
 	_, err = ts.storage.WithRetry(ctx, ts.storage.AddOrder(ctx, orderUserID.OrderNumber, orderUserID.UserID))
 	ts.NoError(err)
 	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok = ordersInterface.([]OrderStatusNew)
+	orders, ok = ordersInterface.([]models.OrderStatusNew)
 	ts.True(ok)
 	ts.Equal("112233", orders[0].Number)
 	ts.Equal("NEW", orders[0].Status)
@@ -278,7 +279,7 @@ func (ts *tSuite) TestGetOrders() {
 	ts.Equal("NEW", orders[1].Status)
 
 	// добавляем ордер с другим статусом
-	testStatuses := []OrderStatusNew{
+	testStatuses := []models.OrderStatusNew{
 		{Number: "112233", Status: "PROCESSING", Accrual: 729.98, UploadedAt: time.Now()},
 	}
 
@@ -287,7 +288,7 @@ func (ts *tSuite) TestGetOrders() {
 
 	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok = ordersInterface.([]OrderStatusNew)
+	orders, ok = ordersInterface.([]models.OrderStatusNew)
 	ts.True(ok)
 	ts.Equal(testStatuses[0].Number, orders[1].Number)
 	ts.Equal(testStatuses[0].Accrual, orders[1].Accrual)
