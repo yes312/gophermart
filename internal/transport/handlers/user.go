@@ -20,7 +20,7 @@ func (h *handlersData) Registration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if data.Login == "" || data.Password == "" {
-		http.Error(w, "Пароль или логин не корректны", http.StatusBadRequest)
+		http.Error(w, "Пароль или логин не кор ректны", http.StatusBadRequest)
 		return
 	}
 
