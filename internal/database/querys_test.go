@@ -202,6 +202,7 @@ func (ts *tSuite) TestCommon() {
 	balanceInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetBalance(ctx, orderUserID.UserID))
 	balance, ok := balanceInterface.(models.Balance)
 	ts.True(ok)
+	ts.NoError(err)
 
 	ts.Equal(balance.Current, 729.98)
 	ts.Equal(balance.Withdraw, 0.0)
@@ -219,6 +220,7 @@ func (ts *tSuite) TestCommon() {
 
 	// GetBalance получаем баланс после писания
 	balanceInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetBalance(ctx, orderUserID.UserID))
+	ts.NoError(err)
 	balance, ok = balanceInterface.(models.Balance)
 	ts.True(ok)
 
@@ -227,6 +229,7 @@ func (ts *tSuite) TestCommon() {
 
 	// тут же тестируем и GetWithdrawals
 	withdrawalsInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetWithdrawals(ctx, orderUserID.UserID))
+	ts.NoError(err)
 	withdrawals, ok := withdrawalsInterface.([]models.Withdrawal)
 	ts.True(ok)
 	ts.Equal(withdrawals[0].Sum, 100.33)
@@ -248,9 +251,9 @@ func (ts *tSuite) TestGetOrders() {
 	// нет данных
 	ordersInterface, err := ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok := ordersInterface.([]models.OrderStatusNew)
+	orders, ok := ordersInterface.([]models.OrderStatus)
 	ts.True(ok)
-	var orderStatusList []models.OrderStatusNew
+	var orderStatusList []models.OrderStatus
 	ts.Equal(orderStatusList, orders, "возврат пустой структуры")
 
 	// добавляем ордер и проверяем
@@ -259,7 +262,7 @@ func (ts *tSuite) TestGetOrders() {
 	ts.NoError(err)
 	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok = ordersInterface.([]models.OrderStatusNew)
+	orders, ok = ordersInterface.([]models.OrderStatus)
 	ts.True(ok)
 	ts.Equal("112233", orders[0].Number)
 	ts.Equal("NEW", orders[0].Status)
@@ -271,7 +274,7 @@ func (ts *tSuite) TestGetOrders() {
 	ts.NoError(err)
 	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok = ordersInterface.([]models.OrderStatusNew)
+	orders, ok = ordersInterface.([]models.OrderStatus)
 	ts.True(ok)
 	ts.Equal("112233", orders[0].Number)
 	ts.Equal("NEW", orders[0].Status)
@@ -288,7 +291,7 @@ func (ts *tSuite) TestGetOrders() {
 
 	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetOrders(ctx, expectedUser.Login))
 	ts.NoError(err)
-	orders, ok = ordersInterface.([]models.OrderStatusNew)
+	orders, ok = ordersInterface.([]models.OrderStatus)
 	ts.True(ok)
 	ts.Equal(testStatuses[0].Number, orders[1].Number)
 	ts.Equal(testStatuses[0].Accrual, orders[1].Accrual)

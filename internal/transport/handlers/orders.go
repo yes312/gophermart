@@ -111,7 +111,7 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 
 	ordersInterface, err := h.storage.WithRetry(h.ctx, h.storage.GetOrders(h.ctx, userID))
 
-	orders, ok := ordersInterface.([]models.OrderStatusNew)
+	orders, ok := ordersInterface.([]models.OrderStatus)
 
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
@@ -133,19 +133,19 @@ func (h *handlersData) GetUploadedOrders(w http.ResponseWriter, r *http.Request)
 		}
 		setResponseHeaders(w, ApplicationJSON, http.StatusOK)
 
-		var ordForWrite []models.OrderStatus
+		// var ordForWrite []models.OrderStatus
 
-		for _, ord := range orders {
+		// for _, ord := range orders {
 
-			ordForWrite = append(ordForWrite, models.OrderStatus{
-				Number:     ord.Number,
-				Status:     ord.Status,
-				UploadedAt: ord.UploadedAt,
-				Accrual:    ord.Accrual,
-			})
-		}
+		// 	ordForWrite = append(ordForWrite, models.OrderStatus{
+		// 		Number:     ord.Number,
+		// 		Status:     ord.Status,
+		// 		UploadedAt: ord.UploadedAt,
+		// 		Accrual:    ord.Accrual,
+		// 	})
+		// }
 		encoder := json.NewEncoder(w)
-		err := encoder.Encode(ordForWrite)
+		err := encoder.Encode(orders)
 
 		if err != nil {
 			h.logger.Errorf("Ошибка маршалинга: %w", err)
