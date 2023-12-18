@@ -6,11 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"gophermart/models"
-	"gophermart/pkg/logger"
 	"gophermart/utils"
-	"log"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -47,31 +43,13 @@ type Storage struct {
 	logger      *zap.SugaredLogger
 }
 
-func getProjectRoot() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Dir(filename)
-}
-
 // подключение к postgress и migrationsUp
-func New(ctx context.Context, DatabaseURI string, MigrationsPath string) (*Storage, error) {
-	// #ВопросМентору объявить новый логгер или передать его с параметром функции из app.go
-	logger, err := logger.NewLogger("Info")
-	if err != nil {
-		return nil, err
-	}
-	// подключаемся к postgres
+func New(ctx context.Context, DatabaseURI string, MigrationsPath string, logger *zap.SugaredLogger) (*Storage, error) {
+
 	conn, err := sql.Open("pgx", DatabaseURI)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка открытия базы данных %w", err)
 	}
-	log.Println(DatabaseURI, "is DatabaseURI")
-	// exePath, err := filepath.Abs(filepath.Dir(""))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// Формируем путь к файлу key.txt
-	// MigrationsPath = filepath.Join(exePath, "../../migrations")
 
 	db, err := migrationsUp(ctx, conn, DatabaseURI, MigrationsPath)
 	if err != nil {

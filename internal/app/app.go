@@ -42,7 +42,7 @@ func New(ctx context.Context, config *config.Config) *Server {
 func (s *Server) Start(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGroup) error {
 
 	s.logger = logger
-	storage, err := db.New(ctx, s.config.DatabaseURI, s.config.MigrationsPath)
+	storage, err := db.New(ctx, s.config.DatabaseURI, s.config.MigrationsPath, logger)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (s *Server) Start(ctx context.Context, logger *zap.SugaredLogger, wg *sync.
 		Handler: s.mux,
 	}
 	s.logger.Info("адрес сервера: " + s.config.RunAdress)
-	a := services.NewAccrual(s.config.AccrualSysremAdress, s.config.AccrualRequestInterval, s.config.AccuralPuttingDBInterval, s.storage, s.logger)
+	a := services.NewAccrual(s.config.AccrualSysremAdress, s.config.AccrualRequestInterval, s.config.AccuralPuttingDBInterval, s.storage, s.logger, s.config.NumberOfWorkers)
 	go a.RunAccrualRequester(ctx, wg)
 
 	return s.server.ListenAndServe()

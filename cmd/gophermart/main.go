@@ -39,7 +39,7 @@ func main() {
 
 	if err != nil {
 		logger.Error(err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	c := make(chan os.Signal, 1)
@@ -69,7 +69,7 @@ func main() {
 
 	if err := s.Start(ctx, logger, wg); err != nil {
 		logger.Error(err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 }

@@ -318,7 +318,7 @@ func (ts *tSuite) SetupSuite() {
 	//база существует
 	DatabaseURI := "postgresql://postgres:12345@localhost/gmtest?sslmode=disable"
 	ctx := context.Background()
-	storage, err := New(ctx, DatabaseURI, "migrations")
+	storage, err := New(ctx, DatabaseURI, "migrations", nil)
 	ts.NoError(err)
 
 	ts.storage = storage
@@ -328,20 +328,8 @@ func (ts *tSuite) SetupSuite() {
 func (ts *tSuite) TearDownSuite() {
 
 	ts.T().Log("TearDownSuite")
-	// if err := m.Down(); err != nil {
-	// 	if err.Error() == "no change" {
-	// 		println("No migration to rollback")
-	// 	} else {
-	// 		panic(err)
-	// 	}
-	// }
+
 	ts.storage.DB.Close()
-
-}
-
-func (ts *tSuite) SetupTest() {
-
-	ts.T().Log("Setup test parameters")
 
 }
 

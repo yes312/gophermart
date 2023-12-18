@@ -13,23 +13,23 @@ import (
 	"go.uber.org/zap"
 )
 
-const numberOfWorkers = 3
-
 type accrual struct {
 	accrualSysremAdress      string
 	accrualRequestInterval   int
 	accuralPuttingDBInterval int
 	storage                  db.StoragerDB
 	logger                   *zap.SugaredLogger
+	numberOfWorkers          int
 }
 
-func NewAccrual(accrualSysremAdress string, accrualRequestInterval int, accuralPuttingDBInterval int, storage db.StoragerDB, logger *zap.SugaredLogger) *accrual {
+func NewAccrual(accrualSysremAdress string, accrualRequestInterval int, accuralPuttingDBInterval int, storage db.StoragerDB, logger *zap.SugaredLogger, numberOfWorkers int) *accrual {
 	return &accrual{
 		accuralPuttingDBInterval: accuralPuttingDBInterval,
 		accrualSysremAdress:      accrualSysremAdress,
 		accrualRequestInterval:   accrualRequestInterval,
 		storage:                  storage,
 		logger:                   logger,
+		numberOfWorkers:          1,
 	}
 
 }
@@ -41,7 +41,7 @@ func (a *accrual) RunAccrualRequester(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go a.collectOrders(ctx, orders, wg)
 
-	for i := 0; i < numberOfWorkers; i++ {
+	for i := 0; i < a.numberOfWorkers; i++ {
 		wg.Add(1)
 		go a.worker(ctx, orders, ordersFromAccrual, wg)
 	}
@@ -70,7 +70,6 @@ func (a *accrual) collectOrders(ctx context.Context, orders chan<- string, wg *s
 
 			if res, ok := result.([]string); ok {
 				for _, v := range res {
-					// log.Println("нашли ордера на отправку в accural: ", v)
 					orders <- v
 				}
 			}
@@ -130,7 +129,6 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan mode
 	go func() {
 		for v := range ordersFromAccrual {
 			ordersList = append(ordersList, v)
-			// log.Println("добавили в ordersList: ", v, ordersList)
 		}
 	}()
 
@@ -148,7 +146,6 @@ func (a *accrual) putOrdersInDB(ctx context.Context, ordersFromAccrual chan mode
 				ordersListCopy := make([]models.OrderStatusNew, len(ordersList))
 				copy(ordersListCopy, ordersList)
 				ordersList = nil
-				// log.Println("ordersListCopy: ,будем его сохранять в базе", ordersListCopy)
 				mutex.Unlock()
 
 				if _, err := a.storage.WithRetry(ctx, a.storage.PutStatuses(ctx, &ordersListCopy)); err != nil {
