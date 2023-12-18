@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	db "gophermart/internal/database"
 	"gophermart/internal/mocks"
@@ -417,10 +418,10 @@ func (suite *HandlerTestSuite) TestGetOrders() {
 	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
 	suite.server = httptest.NewServer(h.AuthMiddleware(h.GetUploadedOrders))
 
-	// 200 — успешная обработка запроса.
-	// 204 — нет данных для ответа.
+	// + 200 — успешная обработка запроса.
+	// + 204 — нет данных для ответа.
 	// + 401 — пользователь не авторизован.
-	// 500 — внутренняя ошибка сервера.
+	// + 500 — внутренняя ошибка сервера.
 
 	type testCase struct {
 		name               string
@@ -434,21 +435,45 @@ func (suite *HandlerTestSuite) TestGetOrders() {
 	validToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUjhVY"
 	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUj000"
 
-	tests := []testCase{{
-		name:               "401 — пользователь не аутентифицирован",
-		userID:             "JhonJhon",
-		ReturnInterface:    nil,
-		ReturnErr:          nil,
-		expectedStatusCode: 401,
-		useMock:            false,
-		token:              invalidToken,
-	},
+	tests := []testCase{
+		{
+			name:               "401 — пользователь не аутентифицирован",
+			userID:             "JhonJhon",
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 401,
+			useMock:            false,
+			token:              invalidToken,
+		},
 		{
 			name:               "500",
 			userID:             "Jhon",
 			ReturnInterface:    nil,
 			ReturnErr:          errors.New("ошибка 500"),
 			expectedStatusCode: 500,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:               "204 — нет данных для ответа.",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          sql.ErrNoRows,
+			expectedStatusCode: 204,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:   "200 — успешная обработка запроса.",
+			userID: "Jhon",
+			ReturnInterface: []models.OrderStatus{{
+				Number:     "4539148803436467",
+				Status:     "NEW",
+				Accrual:    0,
+				UploadedAt: time.Time{},
+			}},
+			ReturnErr:          nil,
+			expectedStatusCode: 200,
 			useMock:            true,
 			token:              validToken,
 		},
@@ -470,6 +495,324 @@ func (suite *HandlerTestSuite) TestGetOrders() {
 
 		suite.NoError(err)
 		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+		if test.ReturnInterface != nil {
 
+			var order []models.OrderStatus
+			err = json.Unmarshal(resp.Body(), &order)
+			suite.NoError(err)
+			suite.Equal(test.ReturnInterface, order)
+
+		}
+
+	}
+}
+
+func (suite *HandlerTestSuite) TestGetBalance() {
+
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
+	suite.server = httptest.NewServer(h.AuthMiddleware(h.GetBalance))
+
+	// 200 — успешная обработка запроса.
+	// 401 — пользователь не авторизован.
+	// 500 — внутренняя ошибка сервера.
+
+	type testCase struct {
+		name               string
+		userID             string
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+		token              string
+	}
+	validToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUjhVY"
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUj000"
+
+	tests := []testCase{
+		{
+			name:               "401 — пользователь не аутентифицирован",
+			userID:             "JhonJhon",
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 401,
+			useMock:            false,
+			token:              invalidToken,
+		},
+		{
+			name:               "500",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка 500"),
+			expectedStatusCode: 500,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:   "200 — успешная обработка запроса",
+			userID: "Jhon",
+			ReturnInterface: models.Balance{
+				Current:  100,
+				Withdraw: 5,
+			},
+
+			ReturnErr:          nil,
+			expectedStatusCode: 200,
+			useMock:            true,
+			token:              validToken,
+		},
+	}
+
+	url := "/api/user/balance"
+	for _, test := range tests {
+
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().GetBalance(h.ctx, test.userID).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
+
+		resp, err := suite.client.R().
+			SetHeader("authorization", test.token).
+			SetHeader("Content-Type", "application/json").
+			Get(suite.server.URL + url)
+
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+		if test.ReturnInterface != nil {
+
+			var balance models.Balance
+			err = json.Unmarshal(resp.Body(), &balance)
+			suite.NoError(err)
+			suite.Equal(test.ReturnInterface, balance)
+
+		}
+	}
+}
+
+func (suite *HandlerTestSuite) TestWithdrawBalance() {
+
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
+	suite.server = httptest.NewServer(h.AuthMiddleware(h.WithdrawBalance))
+
+	// 200 — успешная обработка запроса;
+	// +401 — пользователь не авторизован;
+	// +402 — на счету недостаточно средств;
+	// +422 — неверный номер заказа;
+	// +500 — внутренняя ошибка сервера.
+
+	type testCase struct {
+		name               string
+		userID             string
+		data               models.OrderSum
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+		token              string
+	}
+	validToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUjhVY"
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUj000"
+
+	tests := []testCase{
+		{
+			name:               "401 — пользователь не аутентифицирован",
+			userID:             "JhonJhon",
+			data:               models.OrderSum{},
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 401,
+			useMock:            false,
+			token:              invalidToken,
+		},
+		{
+			name:   "500",
+			userID: "Jhon",
+			data: models.OrderSum{
+				OrderNumber: "4539148803436467",
+				Sum:         100,
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка 500"),
+			expectedStatusCode: 500,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:   "422 — неверный номер заказа;",
+			userID: "Jhon",
+			data: models.OrderSum{
+				OrderNumber: "123",
+				Sum:         100,
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка 500"),
+			expectedStatusCode: 422,
+			useMock:            false,
+			token:              validToken,
+		},
+		{
+			name:   "402 — на счету недостаточно средств",
+			userID: "Jhon",
+			data: models.OrderSum{
+				OrderNumber: "4539148803436467",
+				Sum:         100,
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          db.ErrNotEnoughFunds,
+			expectedStatusCode: 402,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:   "200 — успешная обработка запроса;",
+			userID: "Jhon",
+			data: models.OrderSum{
+				OrderNumber: "4539148803436467",
+				Sum:         100,
+			},
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 200,
+			useMock:            true,
+			token:              validToken,
+		},
+	}
+
+	url := "/api/user/balance/withdraw"
+	for _, test := range tests {
+
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().WithdrawBalance(h.ctx, test.userID, test.data).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
+
+		resp, err := suite.client.R().
+			SetHeader("authorization", test.token).
+			SetHeader("Content-Type", "application/json").
+			SetBody(test.data).
+			Post(suite.server.URL + url)
+
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+
+	}
+}
+
+func (suite *HandlerTestSuite) TestGetWithdrawals() {
+
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	m := mocks.NewMockStoragerDB(ctrl)
+	logger, err := logger.NewLogger("Info")
+	suite.NoError(err)
+	h := New(ctx, m, logger)
+	h.AuthToken = *jwtpackage.NewToken(time.Duration(999*time.Hour), "secret")
+	suite.server = httptest.NewServer(h.AuthMiddleware(h.GetWithdrawals))
+
+	// 200 — успешная обработка запроса.
+	// 204 — нет ни одного списания.
+	// 401 — пользователь не авторизован.
+	// 500 — внутренняя ошибка сервера.
+
+	type testCase struct {
+		name               string
+		userID             string
+		ReturnInterface    interface{}
+		ReturnErr          error
+		expectedStatusCode int
+		useMock            bool
+		token              string
+	}
+	validToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUjhVY"
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYzMTUyOTUsIlVzZXJJRCI6Ikpob24ifQ.Wx3EpITNO9gjrNLJil9vm38zYDNCFYuNNT9d1DUj000"
+
+	tests := []testCase{
+		{
+			name:               "401 — пользователь не аутентифицирован",
+			userID:             "JhonJhon",
+			ReturnInterface:    nil,
+			ReturnErr:          nil,
+			expectedStatusCode: 401,
+			useMock:            false,
+			token:              invalidToken,
+		},
+		{
+			name:               "500",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          errors.New("ошибка 500"),
+			expectedStatusCode: 500,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:               "204 — нет ни одного списания.",
+			userID:             "Jhon",
+			ReturnInterface:    nil,
+			ReturnErr:          sql.ErrNoRows,
+			expectedStatusCode: 204,
+			useMock:            true,
+			token:              validToken,
+		},
+		{
+			name:   "200 — успешная обработка запроса.",
+			userID: "Jhon",
+			ReturnInterface: []models.Withdrawal{
+				{
+					OrderNumber: "4539148803436467",
+					Sum:         100,
+					ProcessedAt: time.Time{},
+				},
+			},
+			ReturnErr:          nil,
+			expectedStatusCode: 200,
+			useMock:            true,
+			token:              validToken,
+		},
+	}
+
+	url := "/api/user/withdrawals"
+	for _, test := range tests {
+
+		if test.useMock {
+			var mockedDBOperation db.DBOperation
+			m.EXPECT().GetWithdrawals(h.ctx, test.userID).Return(mockedDBOperation)
+			m.EXPECT().WithRetry(h.ctx, mockedDBOperation).Return(test.ReturnInterface, test.ReturnErr)
+		}
+
+		resp, err := suite.client.R().
+			SetHeader("authorization", test.token).
+			SetHeader("Content-Type", "application/json").
+			Get(suite.server.URL + url)
+
+		suite.NoError(err)
+		suite.Equal(test.expectedStatusCode, resp.StatusCode(), test.name)
+		if test.ReturnInterface != nil {
+
+			var withdrawals []models.Withdrawal
+			err = json.Unmarshal(resp.Body(), &withdrawals)
+			suite.NoError(err)
+			suite.Equal(test.ReturnInterface, withdrawals)
+
+		}
 	}
 }

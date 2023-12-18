@@ -295,7 +295,15 @@ func (ts *tSuite) TestGetOrders() {
 	ts.True(ok)
 	ts.Equal(testStatuses[0].Number, orders[1].Number)
 	ts.Equal(testStatuses[0].Accrual, orders[1].Accrual)
-	fmt.Println(orders)
+
+	// тут же тестируем и GetNewProcessedOrders
+	ordersInterface, err = ts.storage.WithRetry(ctx, ts.storage.GetNewProcessedOrders(ctx))
+	ts.NoError(err)
+	ord, ok := ordersInterface.([]string)
+	ts.True(ok)
+	ts.Equal("1177", ord[0])
+	ts.Equal("112233", ord[1])
+
 }
 
 func (ts *tSuite) TestWithdrawBalance() {

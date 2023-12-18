@@ -7,7 +7,6 @@ import (
 	db "gophermart/internal/database"
 	"gophermart/models"
 	"gophermart/utils"
-	"log"
 	"net/http"
 )
 
@@ -28,7 +27,7 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("ПОЛУЧАЕм БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ: ", balance, userID)
+
 	//  #ВОПРОСМЕНТОРУ может выделить маршалинг и отправку в JSON в отдельную функцию?
 
 	// encoder := json.NewEncoder(w)
@@ -45,7 +44,7 @@ func (h *handlersData) GetBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("ВОЗВРАЩАЕМ БАЛАНС ДЛЯ ПОЛЬЗОВАТЕЛЯ  в json: ", string(jsonData))
+
 	w.Write(jsonData)
 
 }
@@ -90,7 +89,7 @@ func (h *handlersData) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, db.ErrNotEnoughFunds):
 
-		h.logger.Errorf("На пользователя %s счете недостаточно баллов", userID)
+		h.logger.Errorf("На счете %s недостаточно баллов", userID)
 		http.Error(w, err.Error(), http.StatusPaymentRequired)
 		return
 
@@ -122,13 +121,13 @@ func (h *handlersData) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	withdrawals, ok := withdrawalsInterface.([]models.Withdrawal)
 
 	switch {
-	case errors.Is(err, sql.ErrNoRows) || !ok:
+	case errors.Is(err, sql.ErrNoRows):
 
 		h.logger.Info("нет данных о выводе средств")
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
 
-	case err != nil:
+	case err != nil || !ok:
 		h.logger.Errorf("Ошибка запроса к базе: %w", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	jwtpackage "gophermart/pkg/jwt"
-	"gophermart/pkg/logger"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
@@ -40,15 +39,9 @@ func New(ctx context.Context, config *config.Config) *Server {
 	}
 }
 
-func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup) error {
+func (s *Server) Start(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGroup) error {
 
-	logger, err := logger.NewLogger(s.config.LoggerLevel)
-
-	if err != nil {
-		return err
-	}
 	s.logger = logger
-
 	storage, err := db.New(ctx, s.config.DatabaseURI, s.config.MigrationsPath)
 	if err != nil {
 		return err

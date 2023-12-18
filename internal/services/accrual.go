@@ -93,10 +93,9 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan models.Or
 				return
 			}
 			url := fmt.Sprint(a.accrualSysremAdress, "/api/orders/", orderNumber)
-			// log.Println("адрес запроса: ", url)
+
 			resp, err := client.R().
 				SetContext(ctx).
-				// SetHeader("Content-Type", "application/json").
 				Get(url)
 
 			if err != nil {
@@ -108,12 +107,12 @@ func (a *accrual) worker(ctx context.Context, in chan string, out chan models.Or
 					a.logger.Errorf("wrong status code: %d order: %s", resp.StatusCode(), orderNumber)
 					continue
 				}
-				// log.Println("BODY: ", string(resp.Body()))
+
 				if err := json.Unmarshal(resp.Body(), &order); err != nil {
 					a.logger.Errorf("Ошибка при декодировании JSON: %w", err)
 					continue
 				} else {
-					// fmt.Println("получено из accrual: ", order)
+
 					out <- order
 				}
 

@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 
 	"gophermart/internal/app"
 	"gophermart/internal/config"
+	"gophermart/pkg/logger"
 
 	"log"
 	"os"
@@ -29,21 +29,19 @@ func init() {
 
 func main() {
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Возникла паника!!!!!!!!:", r)
-		}
-	}()
-
-	log.Println("====Запуск MAIN====")
 	flag.Parse()
 
 	config, err := config.NewConfig(f)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// #ВопросМентору: нужно ли graceful shutdown реализовывать как отдельную функцию или метод и нужен ли для этого отдельный пакет?
-	// --------------------
+	logger, err := logger.NewLogger(config.LoggerLevel)
+
+	if err != nil {
+		logger.Error(err)
+		os.Exit(0)
+	}
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -52,7 +50,7 @@ func main() {
 
 		<-c
 		cancel()
-		fmt.Println("Завершение по сигналу с клавиатуры. ")
+		logger.Info("Завершение по сигналу с клавиатуры. ")
 		os.Exit(0)
 
 	}()
@@ -62,15 +60,16 @@ func main() {
 	defer func() {
 		wg.Wait()
 		if err := s.Close(); err != nil {
-			log.Println("ошибка при закрытии сервера:", err)
+			logger.Info("ошибка при закрытии сервера:", err)
 		} else {
-			log.Println("работа сервера успешно завершена")
+			logger.Info("работа сервера успешно завершена")
 		}
 
 	}()
 
-	if err := s.Start(ctx, wg); err != nil {
-		log.Fatal(err)
+	if err := s.Start(ctx, logger, wg); err != nil {
+		logger.Error(err)
+		os.Exit(0)
 	}
 
 }

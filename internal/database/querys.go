@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"gophermart/models"
-	"log"
 	"strings"
 	"time"
 )
@@ -32,24 +31,6 @@ func (storage *Storage) AddUser(ctx context.Context, UserID, hash string) DBOper
 		return nil, err
 	}
 }
-
-// func (storage *Storage) GetOrder(ctx context.Context, order string) DBOperation {
-// 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
-// 		getOrderQuery := `
-// 		SELECT orders.number, users.user_id
-// 		FROM orders
-// 		LEFT JOIN users ON orders.user_id = users.user_id
-// 		WHERE orders.number = $1`
-
-// 		var orderUserID OrderUserID
-// 		err := tx.QueryRowContext(ctx, getOrderQuery, order).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
-// 		if err != nil {
-// 			return OrderUserID{}, err
-// 		}
-
-// 		return orderUserID, nil
-// 	}
-// }
 
 func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID string) DBOperation {
 
@@ -146,7 +127,7 @@ func (storage *Storage) GetBalance(ctx context.Context, userID string) DBOperati
 
 		balance.Current = (balance.Current - balance.Withdraw) / 1000
 		balance.Withdraw = balance.Withdraw / 1000
-		log.Println("Баланс в querys.go: ", balance)
+
 		return balance, err
 	}
 }
@@ -204,7 +185,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		VALUES ($1, 'WITHDRAWN', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 	`
 		_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, orderSum.Sum*1000)
-		log.Println("Добавляем строку с woithdraw: ", orderSum.OrderNumber, orderSum.Sum*1000)
+
 		return nil, err
 	}
 }
@@ -306,35 +287,32 @@ func (storage *Storage) PutStatuses(ctx context.Context, orderStatus *[]models.O
 
 		_, err := tx.ExecContext(ctx, query, t)
 
-		// В целях отладки
-		// fmt.Println("В целях отладки", query)
-
 		return models.OrderUserID{}, err
 	}
 }
 
 // этот метод написан для тестирования
-func (storage *Storage) GetBilling(ctx context.Context) DBOperation {
-	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
-		query := `SELECT order_number, status, accrual AS accrual, uploaded_at, time FROM billing;`
-		rows, err := tx.QueryContext(ctx, query)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		var billingList []models.Billing
-		for rows.Next() {
-			var b models.Billing
-			err := rows.Scan(&b.OrderNumber, &b.Status, &b.Accrual, &b.UploadedAt, &b.Time)
-			if err != nil {
-				return nil, err
-			}
-			b.Accrual = b.Accrual / 1000
-			billingList = append(billingList, b)
-		}
-		if err := rows.Err(); err != nil {
-			return billingList, err
-		}
-		return billingList, nil
-	}
-}
+// func (storage *Storage) GetBilling(ctx context.Context) DBOperation {
+// 	return func(ctx context.Context, tx *sql.Tx) (interface{}, error) {
+// 		query := `SELECT order_number, status, accrual AS accrual, uploaded_at, time FROM billing;`
+// 		rows, err := tx.QueryContext(ctx, query)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		defer rows.Close()
+// 		var billingList []models.Billing
+// 		for rows.Next() {
+// 			var b models.Billing
+// 			err := rows.Scan(&b.OrderNumber, &b.Status, &b.Accrual, &b.UploadedAt, &b.Time)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			b.Accrual = b.Accrual / 1000
+// 			billingList = append(billingList, b)
+// 		}
+// 		if err := rows.Err(); err != nil {
+// 			return billingList, err
+// 		}
+// 		return billingList, nil
+// 	}
+// }
