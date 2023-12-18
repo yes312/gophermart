@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"gophermart/utils"
 	"log"
 	"os"
@@ -65,35 +64,35 @@ func NewConfig(flag Flags) (*Config, error) {
 	// папке с main. В linux на git тестах. прочитается если папка с файлом будет лежать в корне git репозитория.
 	// как решить этот вопрос?
 	filepathStr := filepath.Join("configs", "key.toml")
-	absPath, err := filepath.Abs(filepathStr)
-	if err != nil {
-		fmt.Println("Ошибка при получении абсолютного пути:", err)
-		return &Config{}, err
-	}
-	_, err = toml.DecodeFile(absPath, &c)
+	// absPath, err := filepath.Abs(filepathStr)
+	// if err != nil {
+	// 	fmt.Println("Ошибка при получении абсолютного пути:", err)
+	// 	return &Config{}, err
+	// }
+	_, err := toml.DecodeFile(filepathStr, &c)
 	if err != nil {
 
 		return &Config{}, err
 	}
 
-	filepathStr = filepath.Join("configs", "config.toml")
-	absPath, err = filepath.Abs(filepathStr)
-	if err != nil {
-		fmt.Println("Ошибка при получении абсолютного пути:", err)
-		return &Config{}, err
-	}
+	// filepathStr = filepath.Join("configs", "config.toml")
+	// absPath, err = filepath.Abs(filepathStr)
+	// if err != nil {
+	// 	fmt.Println("Ошибка при получении абсолютного пути:", err)
+	// 	return &Config{}, err
+	// }
 
-	_, err = toml.DecodeFile(absPath, &c)
-	if err != nil {
-		return &Config{}, err
-	}
-	// c.TokenExp = c.TokenExp * time.Hour
+	// _, err = toml.DecodeFile(absPath, &c)
+	// if err != nil {
+	// 	return &Config{}, err
+	// }
+	c.TokenExp = c.TokenExp * time.Hour
+	c.MigrationsPath = "migrations"
+	c.TokenExp = time.Hour * 999
+	c.AccrualRequestInterval = 1
+	c.AccuralPuttingDBInterval = 1
+	c.NumberOfWorkers = 3
 
-	// c.MigrationsPath = "migrations"
-	// c.TokenExp = time.Hour * 999
-	// c.AccrualRequestInterval = 1
-	// c.AccuralPuttingDBInterval = 1
-	// c.NumberOfWorkers = 3
 	return &c, nil
 
 }
