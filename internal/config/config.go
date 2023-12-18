@@ -87,11 +87,11 @@ func NewConfig(flag Flags) (*Config, error) {
 	// 	return &Config{}, err
 	// }
 	c.TokenExp = c.TokenExp * time.Hour
-	c.MigrationsPath = "migrations"
-	c.TokenExp = time.Hour * 999
-	c.AccrualRequestInterval = 1
-	c.AccuralPuttingDBInterval = 1
-	c.NumberOfWorkers = 3
+	// c.MigrationsPath = "migrations"
+	// c.TokenExp = time.Hour * 999
+	// c.AccrualRequestInterval = 1
+	// c.AccuralPuttingDBInterval = 1
+	// c.NumberOfWorkers = 3
 
 	return &c, nil
 

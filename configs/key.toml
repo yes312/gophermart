@@ -1,1 +1,6 @@
 Key = "verySecretKey"
+MigrationsPath = "migrations"
+TokenExp = 999
+AccrualRequestInterval = 1
+AccuralPuttingDBInterval = 1
+NumberOfWorkers = 3
