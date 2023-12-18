@@ -64,28 +64,42 @@ func NewConfig(flag Flags) (*Config, error) {
 	// ВОПРОСМЕНТОРУ в этом месте я пытаюсь прочитать конфиг из файла key.toml в windows файл прочитается, если папка с файлом будет лежать в одной
 	// папке с main. В linux на git тестах. прочитается если папка с файлом будет лежать в корне git репозитория.
 	// как решить этот вопрос?
-	dir, err := os.Getwd()
+	filepathStr := filepath.Join("configs", "key.toml")
+	absPath, err := filepath.Abs(filepathStr)
+
+	// _, err = os.Stat(filepathStr)
+	// C:\Users\Andrey\go\src\github.com\yes312\gophermart\configs
 	if err != nil {
+		fmt.Println("Ошибка при получении абсолютного пути:", err)
 		return &Config{}, err
 	}
-	fmt.Println("Текущий каталог:", dir)
-	filePath := filepath.Join("configs", "key.toml")
-	_, err = toml.DecodeFile(filePath, &c)
+	// _, err = os.Stat(absPath)
+
+	// if err == nil {
+	// 	fmt.Println("Файл", absPath, "существует.")
+	// } else if os.IsNotExist(err) {
+	// 	fmt.Println("Файла", absPath, "не существует.")
+	// } else {
+	// 	fmt.Println("Ошибка при проверке файла:", err)
+	// }
+	// filePath := filepath.Join(absPath, "configs", "key.toml")
+	_, err = toml.DecodeFile(absPath, &c)
 	if err != nil {
 		// c.Key = "secret"
 		return &Config{}, err
 	}
-	filePath = filepath.Join("configs", "config.toml")
-	_, err = toml.DecodeFile(filePath, &c)
-	if err != nil {
-		return &Config{}, err
-	}
-	c.TokenExp = c.TokenExp * time.Hour
-	// c.MigrationsPath = "migrations"
-	// c.TokenExp = time.Hour * 999
-	// c.AccrualRequestInterval = 1
-	// c.AccuralPuttingDBInterval = 1
-	// c.NumberOfWorkers = 3
+	// filePath = filepath.Join("configs", "config.toml")
+	// _, err = toml.DecodeFile(filePath, &c)
+	// if err != nil {
+	// 	return &Config{}, err
+	// }
+	// c.TokenExp = c.TokenExp * time.Hour
+
+	c.MigrationsPath = "migrations"
+	c.TokenExp = time.Hour * 999
+	c.AccrualRequestInterval = 1
+	c.AccuralPuttingDBInterval = 1
+	c.NumberOfWorkers = 3
 	return &c, nil
 
 }
