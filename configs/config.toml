@@ -1,5 +1,7 @@
+Key = "verySecretKey"
 MigrationsPath = "migrations"
-TokenExp = time.Hour * 999
+TokenExp = 999
 AccrualRequestInterval = 1
 AccuralPuttingDBInterval = 1
 NumberOfWorkers = 3
+LoggerLevel = "Info"
