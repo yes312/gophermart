@@ -66,40 +66,34 @@ func NewConfig(flag Flags) (*Config, error) {
 	// как решить этот вопрос?
 	filepathStr := filepath.Join("configs", "key.toml")
 	absPath, err := filepath.Abs(filepathStr)
-
-	// _, err = os.Stat(filepathStr)
-	// C:\Users\Andrey\go\src\github.com\yes312\gophermart\configs
 	if err != nil {
 		fmt.Println("Ошибка при получении абсолютного пути:", err)
 		return &Config{}, err
 	}
-	// _, err = os.Stat(absPath)
-
-	// if err == nil {
-	// 	fmt.Println("Файл", absPath, "существует.")
-	// } else if os.IsNotExist(err) {
-	// 	fmt.Println("Файла", absPath, "не существует.")
-	// } else {
-	// 	fmt.Println("Ошибка при проверке файла:", err)
-	// }
-	// filePath := filepath.Join(absPath, "configs", "key.toml")
 	_, err = toml.DecodeFile(absPath, &c)
 	if err != nil {
-		// c.Key = "secret"
+
 		return &Config{}, err
 	}
-	// filePath = filepath.Join("configs", "config.toml")
-	// _, err = toml.DecodeFile(filePath, &c)
-	// if err != nil {
-	// 	return &Config{}, err
-	// }
+
+	filepathStr = filepath.Join("configs", "config.toml")
+	absPath, err = filepath.Abs(filepathStr)
+	if err != nil {
+		fmt.Println("Ошибка при получении абсолютного пути:", err)
+		return &Config{}, err
+	}
+
+	_, err = toml.DecodeFile(absPath, &c)
+	if err != nil {
+		return &Config{}, err
+	}
 	// c.TokenExp = c.TokenExp * time.Hour
 
-	c.MigrationsPath = "migrations"
-	c.TokenExp = time.Hour * 999
-	c.AccrualRequestInterval = 1
-	c.AccuralPuttingDBInterval = 1
-	c.NumberOfWorkers = 3
+	// c.MigrationsPath = "migrations"
+	// c.TokenExp = time.Hour * 999
+	// c.AccrualRequestInterval = 1
+	// c.AccuralPuttingDBInterval = 1
+	// c.NumberOfWorkers = 3
 	return &c, nil
 
 }
