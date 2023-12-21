@@ -56,6 +56,8 @@ func (s *Server) Start(ctx context.Context, logger *zap.SugaredLogger, wg *sync.
 	}
 	s.logger.Info("адрес сервера: " + s.config.RunAdress)
 	a := services.NewAccrual(s.config.AccrualSysremAdress, s.config.AccrualRequestInterval, s.config.AccuralPuttingDBInterval, s.storage, s.logger, s.config.NumberOfWorkers)
+
+	wg.Add(1)
 	go a.RunAccrualRequester(ctx, wg)
 
 	return s.server.ListenAndServe()

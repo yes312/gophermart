@@ -7,7 +7,7 @@ package mocks
 import (
 	context "context"
 	db "gophermart/internal/database"
-	models "gophermart/models"
+	models "gophermart/internal/models"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"

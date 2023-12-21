@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	db "gophermart/internal/database"
-	"gophermart/models"
+	"gophermart/internal/models"
 	"sync"
 	"time"
 
@@ -34,6 +34,8 @@ func NewAccrual(accrualSysremAdress string, accrualRequestInterval int, accuralP
 
 }
 func (a *accrual) RunAccrualRequester(ctx context.Context, wg *sync.WaitGroup) {
+
+	defer wg.Done()
 
 	orders := make(chan string, 1000)
 	ordersFromAccrual := make(chan models.OrderStatusNew, 1000)

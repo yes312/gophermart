@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"gophermart/models"
+	"gophermart/internal/models"
 	"gophermart/utils"
 	"path/filepath"
 	"time"
@@ -82,8 +82,6 @@ func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migration
 	}
 	migrationPath := filepath.Join("file:", rootDir, "migrations")
 
-	// path := fmt.Sprintf("file://%s", migrations)
-	// path := filepath.Join(migrationPath, migrations)
 	m, err := migrate.New(migrationPath, DatabaseURI)
 	if err != nil {
 		return nil, err

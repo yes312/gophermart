@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"gophermart/models"
+	"gophermart/internal/models"
 	"testing"
 	"time"
 

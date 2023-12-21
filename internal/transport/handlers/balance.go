@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	db "gophermart/internal/database"
-	"gophermart/models"
+	"gophermart/internal/models"
 	"gophermart/utils"
 	"net/http"
 )

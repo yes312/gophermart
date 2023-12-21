@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"gophermart/models"
+	"gophermart/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"sync"

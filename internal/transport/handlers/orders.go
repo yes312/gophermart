@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	db "gophermart/internal/database"
-	"gophermart/models"
+	"gophermart/internal/models"
 	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/utils"
 	"io"

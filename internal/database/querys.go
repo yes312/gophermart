@@ -3,8 +3,9 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"gophermart/models"
+	"gophermart/internal/models"
 	"strings"
 	"time"
 )
@@ -43,7 +44,7 @@ func (storage *Storage) AddOrder(ctx context.Context, orderNumber string, userID
 		err := tx.QueryRowContext(ctx, getOrderQuery, orderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
 
 		switch {
-		case err == sql.ErrNoRows:
+		case errors.Is(err, sql.ErrNoRows):
 			t := time.Now()
 			addOrderQuery := `INSERT INTO orders(number, user_id, uploaded_at) VALUES ($1, $2, $3)`
 			_, err = tx.ExecContext(ctx, addOrderQuery, orderNumber, userID, t)
@@ -165,7 +166,7 @@ func (storage *Storage) WithdrawBalance(ctx context.Context, userID string, orde
 		err = tx.QueryRowContext(ctx, getOrderQuery, orderSum.OrderNumber).Scan(&orderUserID.OrderNumber, &orderUserID.UserID)
 
 		switch {
-		case err == sql.ErrNoRows:
+		case errors.Is(err, sql.ErrNoRows):
 			t := time.Now()
 			addOrderQuery := `INSERT INTO orders(number, user_id, uploaded_at) VALUES ($1, $2, $3)`
 			_, err = tx.ExecContext(ctx, addOrderQuery, orderSum.OrderNumber, userID, t)

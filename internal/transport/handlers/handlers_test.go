@@ -7,7 +7,7 @@ import (
 	"errors"
 	db "gophermart/internal/database"
 	"gophermart/internal/mocks"
-	"gophermart/models"
+	"gophermart/internal/models"
 	jwtpackage "gophermart/pkg/jwt"
 	"gophermart/pkg/logger"
 	"net/http"
