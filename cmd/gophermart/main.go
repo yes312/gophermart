@@ -31,15 +31,20 @@ func main() {
 
 	flag.Parse()
 
-	config, err := config.NewConfig(f)
-	if err != nil {
-		log.Fatal(err)
+	newConfig, err := config.NewConfig(f)
+
+	if err == config.ErrFileNotFound {
+		log.Println("Файл конфигурации не найден.Будут использованы значения по умолчанию.")
+	} else {
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-	logger, err := logger.NewLogger(config.LoggerLevel)
+
+	logger, err := logger.NewLogger(newConfig.LoggerLevel)
 
 	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	c := make(chan os.Signal, 1)
@@ -55,7 +60,7 @@ func main() {
 
 	}()
 
-	s := app.New(ctx, config)
+	s := app.New(ctx, newConfig)
 	wg := &sync.WaitGroup{}
 	defer func() {
 		wg.Wait()

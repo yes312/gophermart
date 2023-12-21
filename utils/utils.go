@@ -2,8 +2,11 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -69,4 +72,26 @@ func IsValidOrderNumber(orderNumber string) (bool, error) {
 
 	// Карта валидна, если сумма кратна 10
 	return sum%10 == 0, nil
+}
+
+func FindProjectRoot() (string, error) {
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(currentDir, "go.mod")); err == nil {
+			return currentDir, nil
+		}
+		parentDir := filepath.Dir(currentDir)
+
+		if parentDir == currentDir {
+			break
+		}
+		currentDir = parentDir
+	}
+
+	return "", fmt.Errorf("go.mod not found")
 }

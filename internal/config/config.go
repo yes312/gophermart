@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"gophermart/utils"
 	"log"
 	"os"
@@ -10,10 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Сервис должен поддерживать конфигурирование следующими методами:
-// адрес и порт запуска сервиса: переменная окружения ОС RUN_ADDRESS или флаг -a;
-// адрес подключения к базе данных: переменная окружения ОС DATABASE_URI или флаг -d;
-// адрес системы расчёта начислений: переменная окружения ОС ACCRUAL_SYSTEM_ADDRESS или флаг -r.
+var ErrFileNotFound = errors.New("file not found")
 
 type Flags struct {
 	A string // RUN_ADDRESS
@@ -58,21 +56,24 @@ func NewConfig(flag Flags) (*Config, error) {
 	} else {
 		c.AccrualSysremAdress = flag.R
 	}
-
-	filepathStr := filepath.Join("configs", "config.toml")
-	_, err := toml.DecodeFile(filepathStr, &c)
+	rootDir, err := utils.FindProjectRoot()
 	if err != nil {
-
-		return &Config{}, err
+		log.Println("Не удалось определить корневой каталог проекта. Будут использованы значения по умолчанию.")
+	}
+	filepathStr := filepath.Join(rootDir, "configs", "config.toml")
+	_, err = toml.DecodeFile(filepathStr, &c)
+	if err != nil {
+		c.MigrationsPath = "migrations"
+		c.TokenExp = time.Hour * 999
+		c.AccrualRequestInterval = 1
+		c.AccuralPuttingDBInterval = 1
+		c.NumberOfWorkers = 3
+		c.LoggerLevel = "Info"
+		return &c, ErrFileNotFound
 	}
 
 	c.TokenExp = c.TokenExp * time.Hour
-	// c.MigrationsPath = "migrations"
-	// c.TokenExp = time.Hour * 999
-	// c.AccrualRequestInterval = 1
-	// c.AccuralPuttingDBInterval = 1
-	// c.NumberOfWorkers = 3
-	// c.LoggerLevel = "Info"
+
 	return &c, nil
 
 }

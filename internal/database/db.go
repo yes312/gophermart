@@ -76,6 +76,7 @@ func (storage *Storage) Close() error {
 func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migrations string) (*sql.DB, error) {
 
 	path := fmt.Sprintf("file://%s", migrations)
+	// path := filepath.Join("file:", migrations)
 	m, err := migrate.New(path, DatabaseURI)
 	if err != nil {
 		return nil, err
