@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"gophermart/models"
-	"gophermart/utils"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -308,22 +306,12 @@ func (ts *tSuite) TestGetOrders() {
 
 }
 
-func (ts *tSuite) TestWithdrawBalance() {
-
-	ts.T().Log("Тест TestWithdrawBalance()")
-	ctx := context.Background()
-	ts.TruncateAllTables(ctx)
-
-}
-
 func (ts *tSuite) SetupSuite() {
 	//база существует
 	DatabaseURI := "postgresql://postgres:12345@localhost/gmtest?sslmode=disable"
 	ctx := context.Background()
-	rootDir, err := utils.FindProjectRoot()
-	ts.NoError(err)
-	migrationPath := filepath.Join(rootDir, "migrations")
-	storage, err := New(ctx, DatabaseURI, migrationPath, nil)
+
+	storage, err := New(ctx, DatabaseURI, "migrations", nil)
 	ts.NoError(err)
 
 	ts.storage = storage

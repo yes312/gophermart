@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gophermart/models"
 	"gophermart/utils"
+	"path/filepath"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -75,9 +76,15 @@ func (storage *Storage) Close() error {
 
 func migrationsUp(ctx context.Context, db *sql.DB, DatabaseURI string, migrations string) (*sql.DB, error) {
 
-	path := fmt.Sprintf("file://%s", migrations)
-	// path := filepath.Join("file:", migrations)
-	m, err := migrate.New(path, DatabaseURI)
+	rootDir, err := utils.FindProjectRoot()
+	if err != nil {
+		return nil, err
+	}
+	migrationPath := filepath.Join("file:", rootDir, "migrations")
+
+	// path := fmt.Sprintf("file://%s", migrations)
+	// path := filepath.Join(migrationPath, migrations)
+	m, err := migrate.New(migrationPath, DatabaseURI)
 	if err != nil {
 		return nil, err
 	}
